@@ -1,0 +1,205 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>验证码 - CodeJudge</title>
+    <style>
+        /* 重置样式 */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+        }
+
+        /* 邮件容器 */
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 头部 */
+        .email-header {
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            padding: 30px 20px;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+
+        .header-title {
+            color: #ffffff;
+            font-size: 20px;
+            margin: 0;
+        }
+
+        /* 内容区 */
+        .email-content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 25px;
+            color: #1f2937;
+        }
+
+        .message {
+            font-size: 16px;
+            margin-bottom: 30px;
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        /* 验证码样式 */
+        .verification-code-container {
+            margin: 30px auto;
+            max-width: 320px;
+            padding: 5px;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            border-radius: 12px;
+        }
+
+        .verification-code-inner {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .verification-code {
+            font-family: 'Courier New', monospace;
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 8px;
+            color: #1f2937;
+            padding: 15px 20px;
+            background-color: #f3f4f6;
+            border-radius: 6px;
+            display: inline-block;
+            margin: 0 auto;
+        }
+
+        .code-label {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+
+        /* 提示信息 */
+        .note {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f9fafb;
+            border-radius: 6px;
+            text-align: left;
+        }
+
+        .note p {
+            margin: 5px 0;
+        }
+
+        /* 按钮 */
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            font-weight: 500;
+            margin-top: 20px;
+            transition: all 0.2s ease;
+        }
+
+        .button:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        /* 页脚 */
+        .email-footer {
+            background-color: #f9fafb;
+            padding: 20px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .social-links {
+            margin: 15px 0;
+        }
+
+        .social-link {
+            display: inline-block;
+            margin: 0 10px;
+            color: #4b5563;
+            text-decoration: none;
+        }
+
+        .footer-links {
+            margin-top: 10px;
+        }
+
+        .footer-link {
+            color: #4b5563;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        .address {
+            margin-top: 15px;
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+<div class="email-container">
+    <div class="email-header">
+        <div class="logo">CodeJudge</div>
+        <h1 class="header-title">账号验证码</h1>
+    </div>
+
+    <div class="email-content">
+        <p class="greeting">尊敬的用户，您好！</p>
+
+        <p class="message">感谢您使用CodeJudge在线编程判题平台。为了保障您的账号安全，我们需要验证您的身份。请使用以下验证码完成操作：</p>
+
+        <div class="verification-code-container">
+            <div class="verification-code-inner">
+                <div class="code-label">您的验证码是</div>
+                <div class="verification-code">{{code}}</div>
+                <div class="code-label" style="margin-top: 10px;">有效期为10分钟</div>
+            </div>
+        </div>
+
+        <a href="#" class="button">返回登录页面</a>
+
+        <div class="note">
+            <p><strong>安全提示：</strong></p>
+            <p>• 请勿将验证码泄露给他人</p>
+            <p>• 系统不会要求您提供此验证码以外的任何个人信息</p>
+            <p>• 如果这不是您本人的操作，请忽略此邮件或联系我们的客服团队</p>
+        </div>
+    </div>
+
+
+</div>
+</body>
+</html>
