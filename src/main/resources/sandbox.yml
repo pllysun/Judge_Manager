@@ -1,0 +1,41 @@
+sandbox:
+  languages:
+    java:
+      sourceFile: Main.java
+      compileOutFile: Main.class
+      compileCommand:
+        - javac
+        - Main.java
+      runCommand:
+        - java
+        - Main
+      cpuLimit: 10000000000
+      memoryLimit: 268435456
+      procLimit: 50
+      needCompile: true
+    python:
+      sourceFile: main.py
+      compileOutFile: ""
+      runCommand:
+        - python3
+        - main.py
+      cpuLimit: 10000000000
+      memoryLimit: 268435456
+      procLimit: 50
+      needCompile: false
+    cpp:
+      sourceFile: main.cpp
+      compileOutFile: main
+      compileCommand:
+        - g++
+        - -O2
+        - -Wall
+        - main.cpp
+        - -o
+        - main
+      runCommand:
+        - ./main
+      cpuLimit: 10000000000
+      memoryLimit: 268435456
+      procLimit: 50
+      needCompile: true

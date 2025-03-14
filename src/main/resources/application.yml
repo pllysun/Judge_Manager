@@ -122,3 +122,28 @@ sa-token:
   jwt-secret-key: adong
   # token前缀
   token-prefix: Bearer
+
+# 文件存储配置
+file:
+  upload:
+    dir: uploads
+  storage:
+    type: local
+
+# 云存储配置
+cloud:
+  storage:
+    aliyun:
+      endpoint: oss-cn-hangzhou.aliyuncs.com
+      accessKeyId: your-access-key-id
+      accessKeySecret: your-access-key-secret
+      bucketName: your-bucket-name
+    tencent:
+      secretId: your-secret-id
+      secretKey: your-secret-key
+      region: ap-guangzhou
+      bucketName: your-bucket-name
+
+sandbox:
+  api:
+    url: http://sandbox:5050
