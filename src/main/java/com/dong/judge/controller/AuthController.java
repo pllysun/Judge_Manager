@@ -4,11 +4,11 @@ import cn.dev33.satoken.secure.BCrypt;
 import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
-import com.dong.judge.model.dto.user.LoginRequest;
-import com.dong.judge.model.dto.user.Register;
+import com.dong.judge.model.dto.user.*;
 import com.dong.judge.model.pojo.user.User;
 import com.dong.judge.model.vo.Result;
 import com.dong.judge.service.EmailService;
+import com.dong.judge.service.FileStorageService;
 import com.dong.judge.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -20,16 +20,24 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.HttpRequest;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * 用户权限
+ */
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -38,55 +46,13 @@ public class AuthController {
     private UserService userService;
 
     @Autowired
-    private EmailService emailService;
-
-    @Autowired
     private StringRedisTemplate redisTemplate;
 
-    /**
-     * 发送验证码
-     *
-     * @param email 邮箱地址
-     * @return 结果
-     */
-    @PostMapping("/sendVerificationCode")
-    public Result<?> sendVerificationCode(@RequestParam String email) {
-        try {
-            // 检查邮箱是否已注册
-            if (userService.isEmailExist(email)) {
-                return Result.error(400, "邮箱已被注册");
-            }
-
-            // 生成6位数验证码
-            String code = String.format("%04d", (int) (Math.random() * 1000000));
-
-            // 生成验证码ID
-            String verificationId = UUID.randomUUID().toString();
-
-            // 保存验证码到Redis，10分钟有效
-            redisTemplate.opsForValue().set("verification:" + verificationId, code, 10, TimeUnit.MINUTES);
-
-            // 发送验证码邮件
-            boolean sent = emailService.sendVerificationEmail(email, code);
-            if (!sent) {
-                return Result.error("邮件发送失败，请检查邮箱地址");
-            }
-
-            // 返回验证码ID
-            Map<String, String> data = new HashMap<>();
-            data.put("verificationId", verificationId);
-
-            return Result.success("验证码已发送，请查收邮件", data);
-
-        } catch (Exception e) {
-            return Result.error("发送验证码失败: " + e.getMessage());
-        }
-    }
 
     /**
      * 用户注册
      *
-     * @param register             用户信息
+     * @param register 用户信息
      * @return 结果
      */
     @PostMapping("/register")
@@ -122,8 +88,12 @@ public class AuthController {
             // 如果没有提供昵称，使用邮箱前缀作为默认昵称
             if (user.getNickname() == null || user.getNickname().isEmpty()) {
                 String emailPrefix = user.getEmail().split("@")[0];
-                user.setNickname(emailPrefix);
+                user.setUsername(emailPrefix);
+                user.setNickname(register.getEmail());
             }
+
+            user.setAvatar("https://picx.zhimg.com/80/v2-8859acdb8fc8ae5c862624b842970ae9_720w.webp?source=1def8aca");
+            user.setBio("暂无！");
 
             // 5. 保存用户
             boolean saved = userService.save(user);
@@ -149,6 +119,7 @@ public class AuthController {
 
     /**
      * 用户登录
+     *
      * @param loginRequest 登录请求
      * @return 登录结果
      */
@@ -211,4 +182,73 @@ public class AuthController {
         StpUtil.logoutByTokenValue(tokenValue);
         return Result.success("注销成功");
     }
+
+    /**
+     * # 修改用户密码
+     * <p>
+     * 允许已登录用户修改自己的账户密码，需要提供旧密码进行身份验证。
+     * <p>
+     * - 验证用户登录状态
+     * - 验证旧密码是否正确
+     * - 确保新密码和确认密码一致
+     * - 使用BCrypt进行密码加密存储
+     */
+    @PostMapping("/changePassword")
+    @Operation(summary = "修改密码", description = "用户修改自己的登录密码")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "密码修改成功"),
+            @ApiResponse(responseCode = "400", description = "请求参数错误"),
+            @ApiResponse(responseCode = "401", description = "未登录或登录已过期")
+    })
+    public Result<?> changePassword(@RequestBody @Valid ChangePasswordRequest request) {
+        // 检查用户是否已登录
+        if (!StpUtil.isLogin()) {
+            return Result.error(401, "未登录或登录已过期");
+        }
+
+        try {
+            // 获取当前用户
+            String email = (String) StpUtil.getLoginId();
+            User user = userService.getByEmail(email);
+
+            if (user == null) {
+                return Result.error(400, "用户不存在");
+            }
+
+            // 验证验证码
+            String cacheCode = redisTemplate.opsForValue().get("password_reset:" + request.getVerificationId());
+            if (cacheCode == null) {
+                return Result.error(400, "验证码已过期");
+            }
+
+            if (!cacheCode.equals(request.getVerificationCode())) {
+                return Result.error(400, "验证码错误");
+            }
+
+
+            // 密码验证
+            if (!BCrypt.checkpw(request.getOldPassword(), user.getPassword())) {
+                return Result.error(400, "旧密码错误");
+            }
+
+            if (!request.getNewPassword().equals(request.getConfirmPassword())) {
+                return Result.error(400, "新密码与确认密码不一致");
+            }
+
+            // 更新密码
+            String hashedPassword = BCrypt.hashpw(request.getNewPassword(), BCrypt.gensalt(6));
+            user.setPassword(hashedPassword);
+            user.setUpdatedAt(LocalDateTime.now());
+
+            if (!userService.updateById(user)) {
+                return Result.error("密码修改失败，请重试");
+            }
+
+            return Result.success("密码修改成功");
+        } catch (Exception e) {
+            return Result.error("密码修改失败: " + e.getMessage());
+        }
+    }
+
+
 }

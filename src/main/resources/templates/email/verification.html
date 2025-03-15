@@ -18,8 +18,9 @@
 
         /* 邮件容器 */
         .email-container {
+            width: 100%;
             max-width: 600px;
-            margin: 0 auto;
+            margin: 20px auto;
             background-color: #ffffff;
             border-radius: 8px;
             overflow: hidden;
@@ -91,6 +92,8 @@
             border-radius: 6px;
             display: inline-block;
             margin: 0 auto;
+            overflow-wrap: break-word;
+            word-break: break-all;
         }
 
         .code-label {
@@ -125,6 +128,8 @@
             font-weight: 500;
             margin-top: 20px;
             transition: all 0.2s ease;
+            min-width: 160px;
+            text-align: center;
         }
 
         .button:hover {
@@ -167,6 +172,87 @@
             margin-top: 15px;
             font-style: normal;
         }
+
+        /* 响应式设计 */
+        @media (max-width: 640px) {
+            .email-container {
+                margin: 10px auto;
+                width: 95%;
+                border-radius: 6px;
+            }
+
+            .email-header {
+                padding: 20px 15px;
+            }
+
+            .logo {
+                font-size: 24px;
+            }
+
+            .header-title {
+                font-size: 18px;
+            }
+
+            .email-content {
+                padding: 25px 15px;
+            }
+
+            .greeting {
+                font-size: 16px;
+                margin-bottom: 20px;
+            }
+
+            .message {
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+
+            .verification-code-container {
+                max-width: 90%;
+                margin: 20px auto;
+            }
+
+            .verification-code {
+                font-size: 28px;
+                letter-spacing: 6px;
+                padding: 12px 15px;
+            }
+
+            .button {
+                padding: 12px 20px;
+                font-size: 14px;
+                min-width: 140px;
+            }
+
+            .note {
+                padding: 12px;
+                font-size: 13px;
+            }
+
+            .social-link, .footer-link {
+                margin: 0 8px;
+                font-size: 11px;
+            }
+
+            .footer-links {
+                display: flex;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+        }
+
+        /* 超小屏幕设备 */
+        @media (max-width: 380px) {
+            .verification-code {
+                font-size: 24px;
+                letter-spacing: 4px;
+                padding: 10px;
+            }
+
+            .social-link, .footer-link {
+                margin: 0 5px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -185,7 +271,7 @@
             <div class="verification-code-inner">
                 <div class="code-label">您的验证码是</div>
                 <div class="verification-code">{{code}}</div>
-                <div class="code-label" style="margin-top: 10px;">有效期为10分钟</div>
+                <div class="code-label" style="margin-top: 10px;">有效期为15分钟</div>
             </div>
         </div>
 
@@ -199,7 +285,23 @@
         </div>
     </div>
 
+    <div class="email-footer">
+        <div class="social-links">
+            <a href="#" class="social-link">微博</a>
+            <a href="#" class="social-link">微信</a>
+            <a href="#" class="social-link">GitHub</a>
+        </div>
 
+        <div class="footer-links">
+            <a href="#" class="footer-link">隐私政策</a>
+            <a href="#" class="footer-link">使用条款</a>
+            <a href="#" class="footer-link">联系我们</a>
+        </div>
+
+        <address class="address">
+            © 2023 CodeJudge 在线编程判题平台 版权所有
+        </address>
+    </div>
 </div>
 </body>
 </html>

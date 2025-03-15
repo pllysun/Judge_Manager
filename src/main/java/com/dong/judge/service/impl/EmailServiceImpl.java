@@ -50,4 +50,14 @@ public class EmailServiceImpl implements EmailService {
             return false;
         }
     }
+
+    @Override
+    public boolean sendPasswordResetEmail(String email, String code) {
+        return false;
+    }
+
+    @Override
+    public boolean sendSystemNotification(String email, String subject, String content) {
+        return false;
+    }
 }
