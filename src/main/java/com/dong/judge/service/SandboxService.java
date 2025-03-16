@@ -36,4 +36,10 @@ public interface SandboxService {
      * @return 运行结果
      */
     RunResult runCode(RunRequest request);
+
+    /**
+     * 删除文件
+     * @param fileId 文件ID
+     */
+    void deleteFile(String fileId);
 }

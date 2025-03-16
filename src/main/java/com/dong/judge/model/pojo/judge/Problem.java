@@ -42,6 +42,9 @@ public class Problem {
     
     @Schema(description = "题目标签", example = "[\"数组\", \"哈希表\"]")
     private List<String> tags;
+
+    @Schema(description = "测试集ID", example = "407f1a77bcf86cd709431589")
+    private String testGroupId;
     
     @Schema(description = "提交次数", example = "0")
     private Integer submissionCount;

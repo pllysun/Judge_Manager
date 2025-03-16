@@ -5,10 +5,12 @@ import cn.dev33.satoken.stp.SaTokenInfo;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.dev33.satoken.util.SaResult;
 import com.dong.judge.model.dto.user.*;
+import com.dong.judge.model.enums.RoleEnum;
 import com.dong.judge.model.pojo.user.User;
 import com.dong.judge.model.vo.Result;
 import com.dong.judge.service.EmailService;
 import com.dong.judge.service.FileStorageService;
+import com.dong.judge.service.RoleService;
 import com.dong.judge.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -47,6 +49,9 @@ public class AuthController {
 
     @Autowired
     private StringRedisTemplate redisTemplate;
+    
+    @Autowired
+    private RoleService roleService;
 
 
     /**
@@ -100,11 +105,20 @@ public class AuthController {
             if (!saved) {
                 return Result.error("注册失败，请重试");
             }
+            
+            // 6. 设置默认用户角色
+            long count = userService.count();
+            //第一个创建的用户设置为超级管理员。
+            if (count==0) {
+                roleService.setUserRoles(user, RoleEnum.SUPER_ADMIN);
+            }else{
+                roleService.setUserRoles(user, RoleEnum.USER);
+            }
 
-            // 6. 删除验证码
+            // 7. 删除验证码
             redisTemplate.delete("verification:" + register.getVerificationId());
 
-            // 7. 返回结果
+            // 8. 返回结果
             Map<String, Object> data = new HashMap<>();
             data.put("userId", user.getId());
             data.put("email", user.getEmail());

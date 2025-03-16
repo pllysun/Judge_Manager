@@ -5,9 +5,13 @@ import com.dong.judge.dao.repository.TestGroupRepository;
 import com.dong.judge.model.dto.code.StandardCodeRequest;
 import com.dong.judge.model.dto.code.TestCase;
 import com.dong.judge.model.dto.sandbox.CodeExecuteRequest;
+import com.dong.judge.model.dto.sandbox.CompileRequest;
+import com.dong.judge.model.dto.sandbox.RunRequest;
 import com.dong.judge.model.pojo.judge.Problem;
 import com.dong.judge.model.pojo.judge.TestGroup;
 import com.dong.judge.model.vo.sandbox.CodeExecuteResult;
+import com.dong.judge.model.vo.sandbox.CompileResult;
+import com.dong.judge.model.vo.sandbox.RunResult;
 import com.dong.judge.service.SandboxService;
 import com.dong.judge.service.TestGroupService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,6 +30,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -41,11 +46,6 @@ public class TestGroupServiceImpl implements TestGroupService {
 
     @Override
     public TestGroup createTestGroup(TestGroup testGroup) {
-        // 验证题目是否存在
-        if (testGroup.getProblemId() != null) {
-            problemRepository.findById(testGroup.getProblemId())
-                .orElseThrow(() -> new IllegalArgumentException("题目不存在: " + testGroup.getProblemId()));
-        }
         
         // 设置创建时间和更新时间
         LocalDateTime now = LocalDateTime.now();
@@ -68,79 +68,227 @@ public class TestGroupServiceImpl implements TestGroupService {
         return testGroupRepository.save(testGroup);
     }
     
-    @Override
-    public TestGroup createTestGroupWithStandardCode(StandardCodeRequest request) {
-        TestGroup testGroup = request.getTestGroup();
-        String standardCode = request.getStandardCode();
-        String language = request.getLanguage();
-        
-        // 验证参数
-        if (testGroup == null) {
-            throw new IllegalArgumentException("测试集信息不能为空");
-        }
-        if (standardCode == null || standardCode.isEmpty()) {
-            throw new IllegalArgumentException("标准代码不能为空");
-        }
-        if (language == null || language.isEmpty()) {
-            throw new IllegalArgumentException("编程语言不能为空");
-        }
-        
-        // 验证题目是否存在
-        if (testGroup.getProblemId() != null) {
-            problemRepository.findById(testGroup.getProblemId())
-                .orElseThrow(() -> new IllegalArgumentException("题目不存在: " + testGroup.getProblemId()));
-        }
-        
-        // 设置创建时间和更新时间
-        LocalDateTime now = LocalDateTime.now();
-        testGroup.setCreateTime(now);
-        testGroup.setUpdateTime(now);
-        
-        // 初始化测试用例列表
-        if (testGroup.getTestCases() == null) {
-            testGroup.setTestCases(new ArrayList<>());
-        }
-        
-        // 为测试用例分配ID并使用标准代码生成期望输出
-        if (testGroup.getTestCases() != null && !testGroup.getTestCases().isEmpty()) {
-            long testCaseId = 1;
-            for (TestCase testCase : testGroup.getTestCases()) {
-                testCase.setId(testCaseId++);
-                
-                // 使用标准代码运行测试用例输入，生成期望输出
-                if (testCase.getInput() != null && !testCase.getInput().isEmpty()) {
-                    try {
-                        CodeExecuteRequest executeRequest = CodeExecuteRequest.builder()
-                                .code(standardCode)
-                                .language(language)
-                                .input(testCase.getInput())
-                                .build();
-                        
-                        CodeExecuteResult result = sandboxService.executeCode(executeRequest);
-                        
-                        // 检查执行结果
-                        if ("Accepted".equals(result.getStatus()) || result.getExitStatus() == 0) {
-                            // 使用标准代码的输出作为期望输出
-                            testCase.setExpectedOutput(result.getStdout());
-                            this.log.info("测试用例 {} 使用标准代码生成期望输出: {}", testCase.getId(), result.getStdout());
-                        } else {
-                            this.log.warn("测试用例 {} 标准代码执行失败: {}", testCase.getId(), result.getStatus());
-                            if (result.getStderr() != null && !result.getStderr().isEmpty()) {
-                                this.log.warn("错误信息: {}", result.getStderr());
-                            }
-                            if (result.getCompileError() != null && !result.getCompileError().isEmpty()) {
-                                this.log.warn("编译错误: {}", result.getCompileError());
-                            }
-                        }
-                    } catch (Exception e) {
-                        this.log.error("执行标准代码生成期望输出时发生错误", e);
-                    }
-                }
-            }
-        }
-        
-        return testGroupRepository.save(testGroup);
-    }
+  @Override
+  public TestGroup createTestGroupWithStandardCode(StandardCodeRequest request) {
+      // 从请求中提取必要信息
+      TestGroup testGroup = request.getTestGroup();
+      String standardCode = request.getStandardCode();
+      String language = request.getLanguage();
+
+      // 参数校验
+      if (testGroup == null) {
+          throw new IllegalArgumentException("测试集信息不能为空");
+      }
+      if (standardCode == null || standardCode.isEmpty()) {
+          throw new IllegalArgumentException("标准代码不能为空");
+      }
+      if (language == null || language.isEmpty()) {
+          throw new IllegalArgumentException("编程语言不能为空");
+      }
+
+      // 初始化测试集基本信息
+      LocalDateTime now = LocalDateTime.now();
+      testGroup.setCreateTime(now);
+      testGroup.setUpdateTime(now);
+
+      // 确保测试用例集合已初始化
+      if (testGroup.getTestCases() == null) {
+          testGroup.setTestCases(new ArrayList<>());
+      }
+
+      // 编译标准代码
+      CompileResult compileResult = sandboxService.compileCode(CompileRequest.builder()
+              .code(standardCode)
+              .language(language)
+              .build());
+
+      // 编译失败处理
+      if (compileResult == null || !compileResult.isSuccess()) {
+          String errorMsg = compileResult != null ? compileResult.getErrorMessage() : "未知编译错误";
+          log.error("标准代码编译失败: {}", errorMsg);
+          throw new IllegalArgumentException("标准代码编译失败: " + errorMsg);
+      }
+
+      String fileId = compileResult.getFileId();
+
+      // 如果有测试用例，则为每个用例运行标准代码生成期望输出
+      if (testGroup.getTestCases() != null && !testGroup.getTestCases().isEmpty()) {
+          try {
+              // 使用虚拟线程并行执行所有测试用例，提高效率
+              List<Thread> threads = new ArrayList<>();
+              for (TestCase testCase : testGroup.getTestCases()) {
+                  // 确保每个测试用例都有唯一ID
+                  testCase.setId(testCase.getId() != null ? testCase.getId() : (long) threads.size() + 1);
+
+                  if (testCase.getInput() != null && !testCase.getInput().isEmpty()) {
+                      // 使用Java 21虚拟线程特性，提高并发性能
+                      Thread virtualThread = Thread.ofVirtual()
+                              .name("test-case-" + testCase.getId())
+                              .start(() -> processTestCase(testCase, standardCode, language, fileId));
+                      threads.add(virtualThread);
+                  }
+              }
+
+              // 等待所有虚拟线程执行完毕
+              for (Thread thread : threads) {
+                  try {
+                      thread.join();
+                  } catch (InterruptedException e) {
+                      log.error("等待测试用例处理线程被中断", e);
+                      Thread.currentThread().interrupt();
+                  }
+              }
+          } finally {
+              // 资源清理：确保编译生成的文件被删除，防止资源泄漏
+              if (fileId != null) {
+                  sandboxService.deleteFile(fileId);
+              }
+          }
+      }
+
+      // 持久化测试集
+      return testGroupRepository.save(testGroup);
+  }
+
+  /**
+   * 处理单个测试用例，运行标准代码生成期望输出
+   *
+   * @param testCase 测试用例
+   * @param standardCode 标准代码
+   * @param language 编程语言
+   * @param fileId 编译生成的文件ID
+   */
+  private void processTestCase(TestCase testCase, String standardCode, String language, String fileId) {
+      try {
+          RunResult runResult = sandboxService.runCode(RunRequest.builder()
+                  .code(standardCode)
+                  .language(language)
+                  .input(testCase.getInput())
+                  .fileId(fileId)
+                  .build());
+
+          // 检查执行结果
+          if ("Accepted".equals(runResult.getStatus()) || runResult.getExitStatus() == 0) {
+              // 运行成功，使用标准代码的输出作为期望输出
+              testCase.setExpectedOutput(runResult.getStdout());
+              log.info("测试用例 {} 使用标准代码生成期望输出: {}", testCase.getId(), runResult.getStdout());
+          } else {
+              // 运行失败，记录错误信息
+              log.warn("测试用例 {} 标准代码执行失败: {}", testCase.getId(), runResult.getStatus());
+              if (runResult.getStderr() != null && !runResult.getStderr().isEmpty()) {
+                  log.warn("错误信息: {}", runResult.getStderr());
+              }
+          }
+      } catch (Exception e) {
+          log.error("测试用例 {} 执行标准代码生成期望输出时发生错误", testCase.getId(), e);
+      }
+  }
+
+
+ @Override
+ public TestGroup updateTestGroupWithStandardCode(String testGroupId, StandardCodeRequest request) {
+     // 获取现有测试集
+     TestGroup existingTestGroup = testGroupRepository.findById(testGroupId)
+             .orElseThrow(() -> new IllegalArgumentException("测试集不存在: " + testGroupId));
+
+     // 从请求中提取必要信息
+     TestGroup newTestGroup = request.getTestGroup();
+     String standardCode = request.getStandardCode();
+     String language = request.getLanguage();
+
+     // 参数校验
+     if (standardCode == null || standardCode.isEmpty()) {
+         throw new IllegalArgumentException("标准代码不能为空");
+     }
+     if (language == null || language.isEmpty()) {
+         throw new IllegalArgumentException("编程语言不能为空");
+     }
+
+     // 更新基本信息
+     if (newTestGroup != null) {
+         if (StringUtils.hasText(newTestGroup.getName())) {
+             existingTestGroup.setName(newTestGroup.getName());
+         }
+         if (StringUtils.hasText(newTestGroup.getDescription())) {
+             existingTestGroup.setDescription(newTestGroup.getDescription());
+         }
+
+         // 更新测试用例（如果提供了新的测试用例列表）
+         if (newTestGroup.getTestCases() != null) {
+             // 为新的测试用例分配ID
+             long maxId = 0;
+             if (existingTestGroup.getTestCases() != null && !existingTestGroup.getTestCases().isEmpty()) {
+                 maxId = existingTestGroup.getTestCases().stream()
+                         .mapToLong(TestCase::getId)
+                         .max()
+                         .orElse(0);
+             }
+
+             for (TestCase testCase : newTestGroup.getTestCases()) {
+                 if (testCase.getId() == null) {
+                     testCase.setId(++maxId);
+                 }
+             }
+
+             existingTestGroup.setTestCases(newTestGroup.getTestCases());
+         }
+     }
+
+     // 编译标准代码
+     CompileResult compileResult = sandboxService.compileCode(CompileRequest.builder()
+             .code(standardCode)
+             .language(language)
+             .build());
+
+     // 编译失败处理
+     if (compileResult == null || !compileResult.isSuccess()) {
+         String errorMsg = compileResult != null ? compileResult.getErrorMessage() : "未知编译错误";
+         log.error("标准代码编译失败: {}", errorMsg);
+         throw new IllegalArgumentException("标准代码编译失败: " + errorMsg);
+     }
+
+     String fileId = compileResult.getFileId();
+
+     // 如果有测试用例，则为每个用例运行标准代码生成期望输出
+     if (existingTestGroup.getTestCases() != null && !existingTestGroup.getTestCases().isEmpty()) {
+         try {
+             // 使用虚拟线程并行处理所有测试用例
+             List<Thread> threads = new ArrayList<>();
+             for (TestCase testCase : existingTestGroup.getTestCases()) {
+                 if (testCase.getInput() != null && !testCase.getInput().isEmpty()) {
+                     // 使用Java 21虚拟线程特性，提高并发性能
+                     Thread virtualThread = Thread.ofVirtual()
+                             .name("update-test-case-" + testCase.getId())
+                             .start(() -> processTestCase(testCase, standardCode, language, fileId));
+                     threads.add(virtualThread);
+                 }
+             }
+
+             // 等待所有虚拟线程执行完毕
+             for (Thread thread : threads) {
+                 try {
+                     thread.join();
+                 } catch (InterruptedException e) {
+                     log.error("等待测试用例处理线程被中断", e);
+                     Thread.currentThread().interrupt();
+                 }
+             }
+         } finally {
+             // 资源清理：确保编译生成的文件被删除，防止资源泄漏
+             if (fileId != null) {
+                 sandboxService.deleteFile(fileId);
+             }
+         }
+     }
+
+     // 更新时间
+     existingTestGroup.setUpdateTime(LocalDateTime.now());
+
+     // 持久化并返回更新后的测试集
+     return testGroupRepository.save(existingTestGroup);
+ }
+
+
 
     @Override
     public TestGroup updateTestGroup(String testGroupId, TestGroup testGroup) {
@@ -154,14 +302,6 @@ public class TestGroupServiceImpl implements TestGroupService {
             }
             if (StringUtils.hasText(testGroup.getDescription())) {
                 existingTestGroup.setDescription(testGroup.getDescription());
-            }
-
-            // 更新题目ID（如果提供了新的题目ID）
-            if (testGroup.getProblemId() != null && !testGroup.getProblemId().equals(existingTestGroup.getProblemId())) {
-                // 验证新题目是否存在
-                problemRepository.findById(testGroup.getProblemId())
-                        .orElseThrow(() -> new IllegalArgumentException("题目不存在: " + testGroup.getProblemId()));
-                existingTestGroup.setProblemId(testGroup.getProblemId());
             }
 
             // 更新测试用例（如果提供了新的测试用例列表）
@@ -191,101 +331,6 @@ public class TestGroupServiceImpl implements TestGroupService {
         return testGroupRepository.save(existingTestGroup);
     }
 
-    @Override
-    public TestGroup updateTestGroupWithStandardCode(String testGroupId, StandardCodeRequest request) {
-        TestGroup existingTestGroup = testGroupRepository.findById(testGroupId)
-                .orElseThrow(() -> new IllegalArgumentException("测试集不存在: " + testGroupId));
-
-        TestGroup newTestGroup = request.getTestGroup();
-        String standardCode = request.getStandardCode();
-        String language = request.getLanguage();
-
-        // 验证参数
-        if (standardCode == null || standardCode.isEmpty()) {
-            throw new IllegalArgumentException("标准代码不能为空");
-        }
-        if (language == null || language.isEmpty()) {
-            throw new IllegalArgumentException("编程语言不能为空");
-        }
-
-        // 更新基本信息
-        if (newTestGroup != null) {
-            if (StringUtils.hasText(newTestGroup.getName())) {
-                existingTestGroup.setName(newTestGroup.getName());
-            }
-            if (StringUtils.hasText(newTestGroup.getDescription())) {
-                existingTestGroup.setDescription(newTestGroup.getDescription());
-            }
-
-            // 更新题目ID（如果提供了新的题目ID）
-            if (newTestGroup.getProblemId() != null && !newTestGroup.getProblemId().equals(existingTestGroup.getProblemId())) {
-                // 验证新题目是否存在
-                problemRepository.findById(newTestGroup.getProblemId())
-                        .orElseThrow(() -> new IllegalArgumentException("题目不存在: " + newTestGroup.getProblemId()));
-                existingTestGroup.setProblemId(newTestGroup.getProblemId());
-            }
-
-            // 更新测试用例（如果提供了新的测试用例列表）
-            if (newTestGroup.getTestCases() != null) {
-                // 为新的测试用例分配ID
-                long maxId = 0;
-                if (existingTestGroup.getTestCases() != null && !existingTestGroup.getTestCases().isEmpty()) {
-                    maxId = existingTestGroup.getTestCases().stream()
-                            .mapToLong(TestCase::getId)
-                            .max()
-                            .orElse(0);
-                }
-
-                for (TestCase testCase : newTestGroup.getTestCases()) {
-                    if (testCase.getId() == null) {
-                        testCase.setId(++maxId);
-                    }
-                }
-
-                existingTestGroup.setTestCases(newTestGroup.getTestCases());
-            }
-        }
-
-        // 使用标准代码为测试用例生成期望输出
-        if (existingTestGroup.getTestCases() != null && !existingTestGroup.getTestCases().isEmpty()) {
-            for (TestCase testCase : existingTestGroup.getTestCases()) {
-                // 使用标准代码运行测试用例输入，生成期望输出
-                if (testCase.getInput() != null && !testCase.getInput().isEmpty()) {
-                    try {
-                        CodeExecuteRequest executeRequest = CodeExecuteRequest.builder()
-                                .code(standardCode)
-                                .language(language)
-                                .input(testCase.getInput())
-                                .build();
-
-                        CodeExecuteResult result = sandboxService.executeCode(executeRequest);
-
-                        // 检查执行结果
-                        if ("Accepted".equals(result.getStatus()) || result.getExitStatus() == 0) {
-                            // 使用标准代码的输出作为期望输出
-                            testCase.setExpectedOutput(result.getStdout());
-                            this.log.info("测试用例 {} 使用标准代码生成期望输出: {}", testCase.getId(), result.getStdout());
-                        } else {
-                            this.log.warn("测试用例 {} 标准代码执行失败: {}", testCase.getId(), result.getStatus());
-                            if (result.getStderr() != null && !result.getStderr().isEmpty()) {
-                                this.log.warn("错误信息: {}", result.getStderr());
-                            }
-                            if (result.getCompileError() != null && !result.getCompileError().isEmpty()) {
-                                this.log.warn("编译错误: {}", result.getCompileError());
-                            }
-                        }
-                    } catch (Exception e) {
-                        this.log.error("执行标准代码生成期望输出时发生错误", e);
-                    }
-                }
-            }
-        }
-
-        // 更新时间
-        existingTestGroup.setUpdateTime(LocalDateTime.now());
-
-        return testGroupRepository.save(existingTestGroup);
-    }
 
 
     @Override
@@ -303,48 +348,6 @@ public class TestGroupServiceImpl implements TestGroupService {
             .orElseThrow(() -> new IllegalArgumentException("测试集不存在: " + testGroupId));
     }
 
-    @Override
-    public List<TestGroup> getTestGroupsByProblemId(String problemId) {
-        // 验证题目是否存在
-        problemRepository.findById(problemId)
-            .orElseThrow(() -> new IllegalArgumentException("题目不存在: " + problemId));
-
-        return testGroupRepository.findByProblemId(problemId);
-    }
-
-    @Override
-    public Page<TestGroup> getTestGroupList(int page, int size, String problemId, String keyword) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updateTime"));
-
-        // 无筛选条件时使用标准分页查询
-        if (!StringUtils.hasText(problemId) && !StringUtils.hasText(keyword)) {
-            return testGroupRepository.findAll(pageable);
-        }
-
-        // 单条件查询
-        if (StringUtils.hasText(problemId) && !StringUtils.hasText(keyword)) {
-            return testGroupRepository.findByProblemId(problemId, pageable);
-        } else if (!StringUtils.hasText(problemId) && StringUtils.hasText(keyword)) {
-            return testGroupRepository.findByNameContaining(keyword, pageable);
-        }
-
-        // 复合条件查询需要手动实现
-        List<TestGroup> allTestGroups = testGroupRepository.findByProblemId(problemId);
-        List<TestGroup> filteredTestGroups = allTestGroups.stream()
-            .filter(tg -> tg.getName() != null && tg.getName().contains(keyword))
-            .collect(Collectors.toList());
-
-        // 手动分页
-        int start = (int) pageable.getOffset();
-        int end = Math.min((start + pageable.getPageSize()), filteredTestGroups.size());
-
-        // 如果start超出了列表大小，返回空页
-        if (start >= filteredTestGroups.size()) {
-            return Page.empty(pageable);
-        }
-
-        return new org.springframework.data.domain.PageImpl<>(filteredTestGroups.subList(start, end), pageable, filteredTestGroups.size());
-    }
 
 
 
@@ -448,4 +451,11 @@ public class TestGroupServiceImpl implements TestGroupService {
                 throw new RuntimeException("导出测试集JSON失败: " + e.getMessage());
             }
         }
+
+    @Override
+    public List<TestGroup> getTestGroupsById(String testGroupId) {
+        Optional<TestGroup> byId = testGroupRepository.findById(testGroupId);
+        TestGroup testGroup = byId.get();
+        return List.of(testGroup);
+    }
 }

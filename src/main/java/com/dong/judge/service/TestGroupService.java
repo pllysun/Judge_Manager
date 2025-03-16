@@ -54,23 +54,6 @@ public interface TestGroupService {
     TestGroup getTestGroupById(String testGroupId);
     
     /**
-     * 根据题目ID获取测试集列表
-     * @param problemId 题目ID
-     * @return 测试集列表
-     */
-    List<TestGroup> getTestGroupsByProblemId(String problemId);
-    
-    /**
-     * 分页获取测试集列表
-     * @param page 页码
-     * @param size 每页大小
-     * @param problemId 题目ID（可选）
-     * @param keyword 关键词（可选）
-     * @return 测试集分页列表
-     */
-    Page<TestGroup> getTestGroupList(int page, int size, String problemId, String keyword);
-    
-    /**
      * 更新测试用例
      * @param testGroupId 测试集ID
      * @param testCaseId 测试用例ID
@@ -101,4 +84,11 @@ public interface TestGroupService {
      * @return 测试集JSON字符串
      */
     String exportTestGroupJson(String testGroupId);
+
+    /**
+     * 获取测试集列表
+     * @param testGroupId 测试集ID
+     * @return 测试集列表
+     */
+    List<TestGroup> getTestGroupsById(String testGroupId);
 }

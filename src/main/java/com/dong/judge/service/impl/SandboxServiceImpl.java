@@ -112,6 +112,7 @@ package com.dong.judge.service.impl;
                 if (langConfig == null) {
                     return CompileResult.builder()
                             .success(false)
+                            .isCompile(false)
                             .errorMessage("不支持的语言: " + request.getLanguage())
                             .build();
                 }
@@ -119,6 +120,7 @@ package com.dong.judge.service.impl;
                 // 2. 如果是解释型语言，不需要编译
                 if (!langConfig.isNeedCompile()) {
                     return CompileResult.builder()
+                            .isCompile(false)
                             .success(true)
                             .build();
                 }
@@ -129,6 +131,7 @@ package com.dong.judge.service.impl;
                 // 4. 处理编译结果
                 if (compileResponse == null || !compileResponse.isArray() || compileResponse.isEmpty()) {
                     return CompileResult.builder()
+                            .isCompile(true)
                             .success(false)
                             .errorMessage("编译服务返回无效响应")
                             .build();
@@ -139,6 +142,7 @@ package com.dong.judge.service.impl;
 
                 if (!"Accepted".equals(status)) {
                     return CompileResult.builder()
+                            .isCompile(true)
                             .success(false)
                             .errorMessage(firstResult.path("files").path("stderr").asText())
                             .status(status)
@@ -149,6 +153,7 @@ package com.dong.judge.service.impl;
                 String fileId = firstResult.path("fileIds").path(langConfig.getCompileOutFile()).asText();
 
                 return CompileResult.builder()
+                        .isCompile(true)
                         .success(true)
                         .fileId(fileId)
                         .status(status)
@@ -157,6 +162,7 @@ package com.dong.judge.service.impl;
             } catch (Exception e) {
                 log.error("编译代码时发生错误", e);
                 return CompileResult.builder()
+                        .isCompile(true)
                         .success(false)
                         .errorMessage("编译代码时发生错误: " + e.getMessage())
                         .build();
@@ -344,7 +350,8 @@ package com.dong.judge.service.impl;
             return response.getBody();
         }
 
-        private void deleteFile(String fileId) {
+        @Override
+        public void deleteFile(String fileId) {
             try {
                 if (fileId != null && !fileId.isEmpty()) {
                     restTemplate.delete(sandboxApiUrl + "/file/" + fileId);

@@ -53,7 +53,7 @@ public class CodeServiceImpl implements CodeService {
         }
 
         // 2. 获取测试集
-        List<TestGroup> testGroups = testGroupService.getTestGroupsByProblemId(request.getProblemId());
+        List<TestGroup> testGroups = testGroupService.getTestGroupsById(problem.getTestGroupId());
         if (testGroups == null || testGroups.isEmpty()) {
             throw new IllegalArgumentException("题目没有测试集: " + request.getProblemId());
         }

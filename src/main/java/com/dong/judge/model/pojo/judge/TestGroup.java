@@ -32,9 +32,6 @@ public class TestGroup {
     @Schema(description = "测试集描述", example = "用于测试基本功能")
     private String description;
     
-    @Schema(description = "关联的题目ID", example = "507f1f77bcf86cd799439011")
-    private String problemId;
-    
     @Schema(description = "测试用例列表")
     private List<TestCase> testCases;
     

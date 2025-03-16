@@ -179,6 +179,7 @@ public class UserController {
         data.put("nickname", user.getNickname());
         data.put("avatar", user.getAvatar());
         data.put("bio", user.getBio());
+        data.put("roles", user.getRoles());
         return data;
     }
 }

@@ -14,4 +14,8 @@ public class CompileResult {
     private String errorMessage;
     private String fileId;
     private String status;
+    /**
+     * 是否需要编译
+     */
+    private boolean isCompile;
 }

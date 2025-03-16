@@ -134,35 +134,7 @@ public class TestGroupController {
             return Result.error("获取测试集失败: " + e.getMessage());
         }
     }
-    
-    @GetMapping("/problem/{problemId}")
-    @Operation(summary = "获取题目的测试集列表", description = "根据题目ID获取测试集列表")
-    public Result<List<TestGroup>> getTestGroupsByProblemId(
-            @Parameter(description = "题目ID") @PathVariable String problemId) {
-        try {
-            List<TestGroup> testGroups = testGroupService.getTestGroupsByProblemId(problemId);
-            return Result.success(testGroups);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
-        } catch (Exception e) {
-            return Result.error("获取测试集列表失败: " + e.getMessage());
-        }
-    }
-    
-    @GetMapping("/list")
-    @Operation(summary = "获取测试集列表", description = "分页获取测试集列表，支持按题目ID、关键词筛选")
-    public Result<Page<TestGroup>> getTestGroupList(
-            @Parameter(description = "页码") @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "每页大小") @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "题目ID") @RequestParam(required = false) String problemId,
-            @Parameter(description = "关键词") @RequestParam(required = false) String keyword) {
-        try {
-            Page<TestGroup> testGroups = testGroupService.getTestGroupList(page, size, problemId, keyword);
-            return Result.success(testGroups);
-        } catch (Exception e) {
-            return Result.error("获取测试集列表失败: " + e.getMessage());
-        }
-    }
+
     
     @PutMapping("/{testGroupId}/testCase/{testCaseId}")
     @Operation(summary = "更新测试用例", description = "更新测试集中的指定测试用例")
