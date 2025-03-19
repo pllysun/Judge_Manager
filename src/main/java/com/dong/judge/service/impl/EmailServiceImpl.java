@@ -2,6 +2,7 @@ package com.dong.judge.service.impl;
 
 import com.dong.judge.service.EmailService;
 import jakarta.mail.internet.MimeMessage;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
@@ -14,6 +15,7 @@ import org.springframework.util.FileCopyUtils;
 
 import java.nio.charset.StandardCharsets;
 
+@Slf4j
 @Service
 public class EmailServiceImpl implements EmailService {
 
@@ -25,8 +27,10 @@ public class EmailServiceImpl implements EmailService {
 
     private static final String VERIFICATION_TEMPLATE_PATH = "classpath:templates/email/verification.html";
 
-    @Override
-    public boolean sendVerificationEmail(String toEmail, String code) {
+    /**
+     * 发送包含验证码的邮件的通用方法
+     */
+    private boolean sendCodeEmail(String toEmail, String code, String subject) {
         try {
             // 读取HTML模板文件
             Resource resource = new ClassPathResource(VERIFICATION_TEMPLATE_PATH.replace("classpath:", ""));
@@ -40,20 +44,25 @@ public class EmailServiceImpl implements EmailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             helper.setFrom(fromEmail);
             helper.setTo(toEmail);
-            helper.setSubject("Judge System - 邮箱验证码");
+            helper.setSubject(subject);
             helper.setText(emailContent, true); // 第二个参数true表示启用HTML
 
             mailSender.send(message);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             return false;
         }
     }
 
     @Override
+    public boolean sendVerificationEmail(String toEmail, String code) {
+        return sendCodeEmail(toEmail, code, "Judge System - 邮箱验证码");
+    }
+
+    @Override
     public boolean sendPasswordResetEmail(String email, String code) {
-        return false;
+        return sendCodeEmail(email, code, "Judge System - 密码重置验证码");
     }
 
     @Override
