@@ -72,9 +72,6 @@ public class ProblemServiceImpl implements ProblemService {
         if (StringUtils.hasText(problem.getTitle())) {
             existingProblem.setTitle(problem.getTitle());
         }
-        if (StringUtils.hasText(problem.getDifficulty())) {
-            existingProblem.setDifficulty(problem.getDifficulty());
-        }
         if (StringUtils.hasText(problem.getContent())) {
             existingProblem.setContent(problem.getContent());
         }
@@ -186,7 +183,6 @@ public class ProblemServiceImpl implements ProblemService {
       // 复合条件查询需要手动实现
       List<Problem> allProblems = problemRepository.findAll();
       List<Problem> filteredProblems = allProblems.stream()
-          .filter(p -> !StringUtils.hasText(difficulty) || p.getDifficulty().equals(difficulty))
           .filter(p -> !StringUtils.hasText(tag) || (p.getTags() != null && p.getTags().contains(tag)))
           .filter(p -> !StringUtils.hasText(keyword) || (p.getTitle() != null && p.getTitle().contains(keyword)))
           .collect(Collectors.toList());
