@@ -3,6 +3,7 @@ package com.dong.judge.service.impl;
 import com.dong.judge.dao.repository.ProblemRepository;
 import com.dong.judge.dao.repository.ProblemTagRepository;
 import com.dong.judge.model.dto.code.TestCaseSet;
+import com.dong.judge.model.enums.DifficultyLevel;
 import com.dong.judge.model.pojo.judge.Problem;
 import com.dong.judge.model.pojo.judge.ProblemTag;
 import com.dong.judge.service.ProblemService;
@@ -173,7 +174,9 @@ public class ProblemServiceImpl implements ProblemService {
 
       // 使用JPA提供的条件查询（针对单条件查询）
       if (StringUtils.hasText(difficulty) && !StringUtils.hasText(tag) && !StringUtils.hasText(keyword)) {
-          return problemRepository.findByDifficulty(difficulty, pageable);
+          // 将String类型的difficulty转换为DifficultyLevel枚举类型
+          DifficultyLevel difficultyLevel = DifficultyLevel.valueOf(difficulty);
+          return problemRepository.findByDifficultyLevel(difficultyLevel, pageable);
       } else if (!StringUtils.hasText(difficulty) && StringUtils.hasText(tag) && !StringUtils.hasText(keyword)) {
           return problemRepository.findByTagsContaining(tag, pageable);
       } else if (!StringUtils.hasText(difficulty) && !StringUtils.hasText(tag) && StringUtils.hasText(keyword)) {

@@ -1,5 +1,6 @@
 package com.dong.judge.dao.repository;
 
+import com.dong.judge.model.enums.DifficultyLevel;
 import com.dong.judge.model.pojo.judge.Problem;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,11 +24,11 @@ public interface ProblemRepository extends MongoRepository<Problem, String> {
     
     /**
      * 根据难度查找题目（分页）
-     * @param difficulty 难度
+     * @param difficultyLevel 难度等级
      * @param pageable 分页参数
      * @return 题目分页列表
      */
-    Page<Problem> findByDifficulty(String difficulty, Pageable pageable);
+    Page<Problem> findByDifficultyLevel(DifficultyLevel difficultyLevel, Pageable pageable);
     
     /**
      * 根据标签查找题目（分页）
