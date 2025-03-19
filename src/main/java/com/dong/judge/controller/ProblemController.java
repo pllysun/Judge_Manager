@@ -101,7 +101,7 @@ public class ProblemController {
             @Parameter(description = "标签") @RequestParam(required = false) String tag,
             @Parameter(description = "关键词") @RequestParam(required = false) String keyword) {
         try {
-            Page<Problem> problems = problemService.getProblemList(page, size, level, tag, keyword);
+            Page<Problem> problems = problemService.getProblemList(page, size, String.valueOf(level), tag, keyword);
             return Result.success(problems);
         } catch (Exception e) {
             return Result.error("获取题目列表失败: " + e.getMessage());
