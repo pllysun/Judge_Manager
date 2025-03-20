@@ -32,10 +32,10 @@ public class NotificationController {
 
     @Autowired
     private NotificationService notificationService;
-
+    
     @Autowired
     private UserService userService;
-
+    
     /**
      * 获取当前用户的通知列表
      *
@@ -56,24 +56,24 @@ public class NotificationController {
         try {
             // 获取当前用户ID
             String userId = (String) StpUtil.getLoginId();
-
+            
             // 获取通知列表
             List<Notification> notifications = notificationService.getUserNotifications(userId);
-
+            
             // 获取未读通知数量
             long unreadCount = notificationService.getUnreadCount(userId);
-
+            
             // 构建返回数据
             Map<String, Object> data = new HashMap<>();
             data.put("notifications", notifications);
             data.put("unreadCount", unreadCount);
-
+            
             return Result.success(data);
         } catch (Exception e) {
             return Result.error("获取通知列表失败: " + e.getMessage());
         }
     }
-
+    
     /**
      * 标记通知为已读
      *
@@ -96,20 +96,20 @@ public class NotificationController {
         try {
             // 获取当前用户ID
             String userId = (String) StpUtil.getLoginId();
-
+            
             // 标记为已读
             boolean success = notificationService.markAsRead(notificationId, userId);
-
+            
             if (!success) {
                 return Result.error("标记通知为已读失败，可能通知不存在或无权限");
             }
-
+            
             return Result.success("通知已标记为已读");
         } catch (Exception e) {
             return Result.error("标记通知为已读失败: " + e.getMessage());
         }
     }
-
+    
     /**
      * 标记所有通知为已读
      *
@@ -130,20 +130,20 @@ public class NotificationController {
         try {
             // 获取当前用户ID
             String userId = (String) StpUtil.getLoginId();
-
+            
             // 标记所有为已读
             boolean success = notificationService.markAllAsRead(userId);
-
+            
             if (!success) {
                 return Result.error("标记所有通知为已读失败");
             }
-
+            
             return Result.success("所有通知已标记为已读");
         } catch (Exception e) {
             return Result.error("标记所有通知为已读失败: " + e.getMessage());
         }
     }
-
+    
     /**
      * 创建系统通知（仅管理员及以上可操作）
      *
@@ -166,23 +166,23 @@ public class NotificationController {
             notification.setType(request.getType());
             notification.setTitle(request.getTitle());
             notification.setContent(request.getContent());
-
+            
             // 设置接收者，如果未指定则为全局通知
             String receiverId = request.getReceiverId();
             if (receiverId == null || receiverId.isEmpty()) {
                 receiverId = "all"; // 全局通知
             }
             notification.setReceiverId(receiverId);
-
+            
             // 保存通知
             Notification createdNotification = notificationService.createNotification(notification);
-
+            
             return Result.success("通知创建成功", createdNotification);
         } catch (Exception e) {
             return Result.error("创建通知失败: " + e.getMessage());
         }
     }
-
+    
     /**
      * 删除通知（仅管理员及以上可操作）
      *
@@ -202,11 +202,11 @@ public class NotificationController {
         try {
             // 删除通知
             boolean success = notificationService.deleteNotification(notificationId);
-
+            
             if (!success) {
                 return Result.error("删除通知失败，可能通知不存在");
             }
-
+            
             return Result.success("通知删除成功");
         } catch (Exception e) {
             return Result.error("删除通知失败: " + e.getMessage());
