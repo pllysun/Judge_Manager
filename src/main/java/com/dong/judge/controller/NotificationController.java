@@ -196,7 +196,7 @@ public class NotificationController {
 
         try {
             // 获取当前用户ID
-            String userId = (String) StpUtil.getLoginId();
+            String userId=UserUtil.getUserId();
             
             // 删除用户通知状态
             boolean success = notificationService.deleteUserNotification(userId, notificationId);
