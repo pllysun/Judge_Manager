@@ -231,7 +231,7 @@ public class NotificationController {
 
         try {
             // 获取当前用户ID
-            String userId = (String) StpUtil.getLoginId();
+            String userId=UserUtil.getUserId();
             
             // 标记为已读
             boolean success = notificationService.markAsRead(notificationId, userId);
