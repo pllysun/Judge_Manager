@@ -7,6 +7,7 @@ import com.dong.judge.model.pojo.notification.UserNotificationStatus;
 import com.dong.judge.model.pojo.user.User;
 import com.dong.judge.service.NotificationService;
 import com.dong.judge.service.UserService;
+import com.dong.judge.util.UserUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -67,6 +68,7 @@ public class NotificationServiceImpl implements NotificationService {
             return notification;
         } else {
             // 非全局通知，直接保存
+            notification.setReceiverId(UserUtil.getUserId(notification.getReceiverId()));
             return notificationRepository.save(notification);
         }
     }

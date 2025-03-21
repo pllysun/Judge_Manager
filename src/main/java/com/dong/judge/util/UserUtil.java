@@ -52,9 +52,30 @@ public class UserUtil {
         }
     }
 
+    /**
+     * 获取当前登录用户的用户ID
+     *
+     * @return 返回当前登录用户的用户ID字符串，如果用户不存在则返回null
+     */
     public  static  String  getUserId(){
         // 获取当前用户邮箱
         String email = (String) StpUtil.getLoginId();
+        // 获取用户信息
+        User user = userService.getByEmail(email);
+        if (user == null) {
+            return null;
+        }else{
+            return user.getId().toString();
+        }
+    }
+
+    /**
+     * 根据邮箱获取用户ID
+     *
+     * @param email 用户邮箱
+     * @return 用户ID字符串，如果用户不存在则返回null
+     */
+    public  static  String  getUserId(String email){
         // 获取用户信息
         User user = userService.getByEmail(email);
         if (user == null) {
