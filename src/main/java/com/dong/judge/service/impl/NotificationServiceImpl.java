@@ -72,18 +72,11 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public List<Notification> getUserNotifications(String email) {
+    public List<Notification> getUserNotifications(String userId) {
         // 如果用户邮箱为空，则返回空列表
-        if (email == null || email.isEmpty()) {
+        if (userId == null || userId.isEmpty()) {
             return new ArrayList<>();
         }
-        
-        // 通过邮箱获取用户ID
-        User user = userService.getByEmail(email);
-        if (user == null) {
-            return new ArrayList<>();
-        }
-        String userId = user.getId().toString();
         
         // 获取用户特定通知
         List<Notification> notifications = notificationRepository.findByReceiverIdOrderByCreatedAtDesc(userId);
@@ -148,20 +141,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
-    public Map<String, Object> getUserNotificationsWithStatus(String email) {
+    public Map<String, Object> getUserNotificationsWithStatus(String userId) {
         // 获取用户的所有通知
-        List<Notification> notifications = getUserNotifications(email);
+        List<Notification> notifications = getUserNotifications(userId);
         
         // 构建返回数据
         Map<String, Object> result = new HashMap<>();
         result.put("notifications", notifications);
-        
-        // 通过邮箱获取用户ID
-        User user = userService.getByEmail(email);
-        if (user == null) {
-            return result;
-        }
-        String userId = user.getId().toString();
         
         // 如果用户ID为空，则只返回通知列表
         if (userId.isEmpty()) {
@@ -370,9 +356,7 @@ public class NotificationServiceImpl implements NotificationService {
             // 同时删除相关的用户通知状态
             Optional<UserNotificationStatus> statusOpt = statusRepository
                     .findByUserIdAndNotificationId(userId, notificationId);
-            if (statusOpt.isPresent()) {
-                statusRepository.delete(statusOpt.get());
-            }
+            statusOpt.ifPresent(userNotificationStatus -> statusRepository.delete(userNotificationStatus));
         } else {
             // 如果是全局通知，只删除用户通知状态
             Optional<UserNotificationStatus> statusOpt = statusRepository

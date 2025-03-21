@@ -86,18 +86,13 @@ public class NotificationController {
         }
 
         try {
-            // 获取当前用户邮箱
-            String email = (String) StpUtil.getLoginId();
-            // 获取用户信息
-            User user = userService.getByEmail(email);
-            if (user == null) {
+            String userId=UserUtil.getUserId();
+            if (userId == null) {
                 return Result.error("用户不存在");
             }
-            // 获取用户ID
-            Long userId = user.getId();
             
             // 标记所有为已读
-            boolean success = notificationService.markAllAsRead(userId.toString());
+            boolean success = notificationService.markAllAsRead(userId);
             
             if (!success) {
                 return Result.error("标记所有通知为已读失败");

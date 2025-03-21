@@ -75,10 +75,10 @@ public interface NotificationService {
     /**
      * 获取用户的通知列表及其状态
      *
-     * @param email 用户邮箱，如果为null则获取全局通知
+     * @param userId 用户ID，如果为null则获取全局通知
      * @return 包含通知列表、已读状态映射和未读数量的Map
      */
-    Map<String, Object> getUserNotificationsWithStatus(String email);
+    Map<String, Object> getUserNotificationsWithStatus(String userId);
     
     /**
      * 获取用户对特定通知的状态
