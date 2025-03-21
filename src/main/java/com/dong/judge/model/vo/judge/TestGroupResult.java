@@ -1,5 +1,6 @@
-package com.dong.judge.model.dto.code;
+package com.dong.judge.model.vo.judge;
 
+import com.dong.judge.model.dto.code.TestCaseResult;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,16 +10,16 @@ import lombok.NoArgsConstructor;
 import java.util.List;
 
 /**
- * 测试集合执行结果
+ * 测试集执行结果
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "测试集合执行结果")
-public class TestCaseSetResult {
-    @Schema(description = "测试集ID", example = "1")
-    private Long id;
+@Schema(description = "测试集执行结果")
+public class TestGroupResult {
+    @Schema(description = "测试集ID")
+    private String id;
     
     @Schema(description = "测试集名称", example = "基础测试集")
     private String name;

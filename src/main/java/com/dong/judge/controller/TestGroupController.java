@@ -1,201 +1,158 @@
 package com.dong.judge.controller;
 
-import com.dong.judge.model.dto.code.StandardCodeRequest;
-import com.dong.judge.model.dto.code.TestCase;
+import cn.dev33.satoken.stp.StpUtil;
 import com.dong.judge.model.pojo.judge.TestGroup;
 import com.dong.judge.model.vo.Result;
+import com.dong.judge.model.vo.judge.TestGroupResult;
 import com.dong.judge.service.TestGroupService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * 测试集
+ * 测试集控制器
  */
-@Slf4j
 @RestController
-@RequestMapping("/testGroup")
-@RequiredArgsConstructor
+@RequestMapping("/api/test-groups")
+@Tag(name = "测试集管理", description = "测试集的创建、更新、查询和删除")
+@Slf4j
 public class TestGroupController {
 
-    private final TestGroupService testGroupService;
-    
+    @Autowired
+    private TestGroupService testGroupService;
+
+    /**
+     * 创建测试集
+     *
+     * @param testGroup 测试集信息
+     * @return 测试集执行结果
+     */
     @PostMapping
-    @Operation(summary = "创建测试集", description = "创建一个新的测试集")
-    public Result<TestGroup> createTestGroup(@RequestBody TestGroup testGroup) {
-        // 参数校验
-        if (testGroup.getName() == null || testGroup.getName().isEmpty()) {
-            return Result.badRequest("测试集名称不能为空");
-        }
+    @Operation(summary = "创建测试集", description = "创建一个新的测试集并执行测试")
+    public Result<TestGroupResult> createTestGroup(@RequestBody @Valid TestGroup testGroup) {
+        // 从会话中获取用户ID
+        String userId = (String) StpUtil.getLoginId();
         
         try {
-            TestGroup createdTestGroup = testGroupService.createTestGroup(testGroup);
-            return Result.success("创建测试集成功", createdTestGroup);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
+            TestGroupResult result = testGroupService.createTestGroup(testGroup, userId);
+            return Result.success("测试集创建成功", result);
         } catch (Exception e) {
+            log.error("创建测试集失败", e);
             return Result.error("创建测试集失败: " + e.getMessage());
         }
     }
-    
-    @PostMapping("/withStandardCode")
-    @Operation(summary = "使用标准代码创建测试集", description = "创建一个新的测试集，并使用标准代码生成期望输出")
-    public Result<TestGroup> createTestGroupWithStandardCode(@RequestBody StandardCodeRequest request) {
-        // 参数校验
-        if (request.getTestGroup() == null || request.getTestGroup().getName() == null || request.getTestGroup().getName().isEmpty()) {
-            return Result.badRequest("测试集名称不能为空");
-        }
-        if (request.getStandardCode() == null || request.getStandardCode().isEmpty()) {
-            return Result.badRequest("标准代码不能为空");
-        }
-        if (request.getLanguage() == null || request.getLanguage().isEmpty()) {
-            return Result.badRequest("编程语言不能为空");
-        }
+
+    /**
+     * 更新测试集
+     *
+     * @param id 测试集ID
+     * @param testGroup 测试集信息
+     * @return 测试集执行结果
+     */
+    @PutMapping("/{id}")
+    @Operation(summary = "更新测试集", description = "更新测试集信息并重新执行测试")
+    public Result<TestGroupResult> updateTestGroup(
+            @PathVariable("id") @Parameter(description = "测试集ID") String id,
+            @RequestBody @Valid TestGroup testGroup) {
+        // 从会话中获取用户ID
+        String userId = (String) StpUtil.getLoginId();
         
         try {
-            log.info("使用标准代码创建测试集: {}, 语言: {}", request.getTestGroup().getName(), request.getLanguage());
-            TestGroup createdTestGroup = testGroupService.createTestGroupWithStandardCode(request);
-            return Result.success("创建测试集成功", createdTestGroup);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
+            testGroup.setId(id);
+            TestGroupResult result = testGroupService.updateTestGroup(testGroup, userId);
+            return Result.success("测试集更新成功", result);
         } catch (Exception e) {
-            log.error("使用标准代码创建测试集失败", e);
-            return Result.error("创建测试集失败: " + e.getMessage());
-        }
-    }
-    
-    @PutMapping("/{testGroupId}")
-    @Operation(summary = "更新测试集", description = "根据测试集ID更新测试集信息")
-    public Result<TestGroup> updateTestGroup(
-            @Parameter(description = "测试集ID") @PathVariable String testGroupId,
-            @RequestBody TestGroup testGroup) {
-        try {
-            TestGroup updatedTestGroup = testGroupService.updateTestGroup(testGroupId, testGroup);
-            return Result.success("更新测试集成功", updatedTestGroup);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
-        } catch (Exception e) {
+            log.error("更新测试集失败", e);
             return Result.error("更新测试集失败: " + e.getMessage());
         }
     }
-    
-    @PutMapping("/{testGroupId}/withStandardCode")
-    @Operation(summary = "使用标准代码更新测试集", description = "根据测试集ID更新测试集信息，并使用标准代码重新生成期望输出")
-    public Result<TestGroup> updateTestGroupWithStandardCode(
-            @Parameter(description = "测试集ID") @PathVariable String testGroupId,
-            @RequestBody StandardCodeRequest request) {
-        // 参数校验
-        if (request.getStandardCode() == null || request.getStandardCode().isEmpty()) {
-            return Result.badRequest("标准代码不能为空");
-        }
-        if (request.getLanguage() == null || request.getLanguage().isEmpty()) {
-            return Result.badRequest("编程语言不能为空");
-        }
-        
+
+    /**
+     * 获取测试集详情
+     *
+     * @param id 测试集ID
+     * @return 测试集信息
+     */
+    @GetMapping("/{id}")
+    @Operation(summary = "获取测试集详情", description = "根据ID获取测试集详细信息")
+    public Result<TestGroup> getTestGroupById(
+            @PathVariable("id") @Parameter(description = "测试集ID") String id) {
         try {
-            log.info("使用标准代码更新测试集: {}, 语言: {}", testGroupId, request.getLanguage());
-            TestGroup updatedTestGroup = testGroupService.updateTestGroupWithStandardCode(testGroupId, request);
-            return Result.success("更新测试集成功", updatedTestGroup);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
+            TestGroup testGroup = testGroupService.getTestGroupById(id);
+            return Result.success(testGroup);
         } catch (Exception e) {
-            log.error("使用标准代码更新测试集失败", e);
-            return Result.error("更新测试集失败: " + e.getMessage());
+            log.error("获取测试集详情失败", e);
+            return Result.error("获取测试集详情失败: " + e.getMessage());
         }
     }
-    
-    @DeleteMapping("/{testGroupId}")
-    @Operation(summary = "删除测试集", description = "根据测试集ID删除测试集")
+
+    /**
+     * 获取用户的测试集列表
+     *
+     * @return 测试集列表
+     */
+    @GetMapping
+    @Operation(summary = "获取用户的测试集列表", description = "获取当前用户创建的所有测试集")
+    public Result<List<TestGroup>> getUserTestGroups() {
+        // 从会话中获取用户ID
+        String userId = (String) StpUtil.getLoginId();
+        
+        try {
+            List<TestGroup> testGroups = testGroupService.getUserTestGroups(userId);
+            return Result.success(testGroups);
+        } catch (Exception e) {
+            log.error("获取用户测试集列表失败", e);
+            return Result.error("获取用户测试集列表失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 删除测试集
+     *
+     * @param id 测试集ID
+     * @return 操作结果
+     */
+    @DeleteMapping("/{id}")
+    @Operation(summary = "删除测试集", description = "删除指定ID的测试集")
     public Result<Boolean> deleteTestGroup(
-            @Parameter(description = "测试集ID") @PathVariable String testGroupId) {
+            @PathVariable("id") @Parameter(description = "测试集ID") String id) {
+        // 从会话中获取用户ID
+        String userId = (String) StpUtil.getLoginId();
+        
         try {
-            boolean result = testGroupService.deleteTestGroup(testGroupId);
-            return Result.success("删除测试集成功", result);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
+            boolean success = testGroupService.deleteTestGroup(id, userId);
+            return Result.success("测试集删除成功", success);
         } catch (Exception e) {
+            log.error("删除测试集失败", e);
             return Result.error("删除测试集失败: " + e.getMessage());
         }
     }
-    
-    @GetMapping("/{testGroupId}")
-    @Operation(summary = "获取测试集详情", description = "根据测试集ID获取测试集详情")
-    public Result<TestGroup> getTestGroupById(
-            @Parameter(description = "测试集ID") @PathVariable String testGroupId) {
-        try {
-            TestGroup testGroup = testGroupService.getTestGroupById(testGroupId);
-            return Result.success(testGroup);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
-        } catch (Exception e) {
-            return Result.error("获取测试集失败: " + e.getMessage());
-        }
-    }
 
-    
-    @PutMapping("/{testGroupId}/testCase/{testCaseId}")
-    @Operation(summary = "更新测试用例", description = "更新测试集中的指定测试用例")
-    public Result<TestGroup> updateTestCase(
-            @Parameter(description = "测试集ID") @PathVariable String testGroupId,
-            @Parameter(description = "测试用例ID") @PathVariable Long testCaseId,
-            @RequestBody TestCase testCase) {
+    /**
+     * 搜索测试集
+     *
+     * @param keyword 关键词
+     * @return 测试集列表
+     */
+    @GetMapping("/search")
+    @Operation(summary = "搜索测试集", description = "根据关键词搜索测试集")
+    public Result<List<TestGroup>> searchTestGroups(
+            @RequestParam("keyword") @Parameter(description = "搜索关键词") String keyword) {
+        // 从会话中获取用户ID
+        String userId = (String) StpUtil.getLoginId();
+        
         try {
-            TestGroup testGroup = testGroupService.updateTestCase(testGroupId, testCaseId, testCase);
-            return Result.success("更新测试用例成功", testGroup);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
+            List<TestGroup> testGroups = testGroupService.searchTestGroups(userId, keyword);
+            return Result.success(testGroups);
         } catch (Exception e) {
-            return Result.error("更新测试用例失败: " + e.getMessage());
-        }
-    }
-    
-    @PostMapping("/{testGroupId}/testCase")
-    @Operation(summary = "添加测试用例", description = "向测试集中添加新的测试用例")
-    public Result<TestGroup> addTestCase(
-            @Parameter(description = "测试集ID") @PathVariable String testGroupId,
-            @RequestBody TestCase testCase) {
-        try {
-            TestGroup testGroup = testGroupService.addTestCase(testGroupId, testCase);
-            return Result.success("添加测试用例成功", testGroup);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
-        } catch (Exception e) {
-            return Result.error("添加测试用例失败: " + e.getMessage());
-        }
-    }
-    
-    @DeleteMapping("/{testGroupId}/testCase/{testCaseId}")
-    @Operation(summary = "删除测试用例", description = "删除测试集中的指定测试用例")
-    public Result<TestGroup> deleteTestCase(
-            @Parameter(description = "测试集ID") @PathVariable String testGroupId,
-            @Parameter(description = "测试用例ID") @PathVariable Long testCaseId) {
-        try {
-            TestGroup testGroup = testGroupService.deleteTestCase(testGroupId, testCaseId);
-            return Result.success("删除测试用例成功", testGroup);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
-        } catch (Exception e) {
-            return Result.error("删除测试用例失败: " + e.getMessage());
-        }
-    }
-    
-    @GetMapping("/{testGroupId}/export")
-    @Operation(summary = "导出测试集JSON", description = "导出测试集的JSON格式数据")
-    public Result<String> exportTestGroupJson(
-            @Parameter(description = "测试集ID") @PathVariable String testGroupId) {
-        try {
-            String json = testGroupService.exportTestGroupJson(testGroupId);
-            return Result.success(json);
-        } catch (IllegalArgumentException e) {
-            return Result.badRequest(e.getMessage());
-        } catch (Exception e) {
-            return Result.error("导出测试集失败: " + e.getMessage());
+            log.error("搜索测试集失败", e);
+            return Result.error("搜索测试集失败: " + e.getMessage());
         }
     }
 }

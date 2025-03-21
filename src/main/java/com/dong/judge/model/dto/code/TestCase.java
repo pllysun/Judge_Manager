@@ -20,10 +20,4 @@ public class TestCase {
     
     @Schema(description = "测试用例输入数据", example = "1 2")
     private String input;
-    
-    @Schema(description = "期望输出数据", example = "3")
-    private String expectedOutput;
-    
-    @Schema(description = "测试用例描述", example = "测试基本加法")
-    private String description;
 }

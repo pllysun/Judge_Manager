@@ -20,24 +20,27 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Document(collection = "test_groups")
-@Schema(description = "测试集实体")
+@Schema(description = "测试集")
 public class TestGroup {
     @Id
     @Schema(description = "测试集ID")
     private String id;
     
-    @Schema(description = "测试集名称", example = "基础测试集")
-    private String name;
+    @Schema(description = "代码内容")
+    private String code;
     
-    @Schema(description = "测试集描述", example = "用于测试基本功能")
-    private String description;
+    @Schema(description = "编程语言", example = "java")
+    private String language;
     
     @Schema(description = "测试用例列表")
     private List<TestCase> testCases;
     
+    @Schema(description = "创建者ID")
+    private String creatorId;
+    
     @Schema(description = "创建时间")
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
     
     @Schema(description = "更新时间")
-    private LocalDateTime updateTime;
+    private LocalDateTime updatedAt;
 }

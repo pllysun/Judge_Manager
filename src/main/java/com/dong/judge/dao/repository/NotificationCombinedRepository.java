@@ -8,9 +8,12 @@ import java.util.List;
 
 /**
  * 通知数据访问接口
+ * <p>
+ * 处理Notification实体的数据访问
+ * </p>
  */
 @Repository
-public interface NotificationRepository extends MongoRepository<Notification, String> {
+public interface NotificationCombinedRepository extends MongoRepository<Notification, String> {
     
     /**
      * 查找指定接收者的通知

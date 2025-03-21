@@ -62,6 +62,7 @@ public class UserController {
     @Autowired
     private StringRedisTemplate redisTemplate;
 
+    private static  final  String LocalImageURL="http://pllysun.top:7500/api";
 
     /**
      * # 修改用户个人信息
@@ -206,7 +207,17 @@ public class UserController {
             data.put("email", user.getEmail());
             data.put("username", user.getUsername());
             data.put("nickname", user.getNickname());
-            data.put("avatar", user.getAvatar());
+            
+            // 处理头像URL，确保可以在浏览器中直接访问
+            String avatarPath = user.getAvatar();
+            if (avatarPath != null && !avatarPath.isEmpty()) {
+                // 如果头像路径不是以http开头的URL，则添加服务器上下文路径
+                if (!avatarPath.startsWith("http")) {
+                    // 使用/uploads/前缀，与WebConfig中的资源映射匹配
+                    avatarPath = LocalImageURL+"/uploads/" + avatarPath;
+                }
+            }
+            data.put("avatar", avatarPath);
             data.put("bio", user.getBio());
 
             // 获取用户的最高角色

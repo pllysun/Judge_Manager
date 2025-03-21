@@ -4,9 +4,11 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.dong.judge.model.dto.notification.NotificationRequest;
 import com.dong.judge.model.pojo.notification.Notification;
+import com.dong.judge.model.pojo.user.User;
 import com.dong.judge.model.vo.Result;
 import com.dong.judge.service.NotificationService;
 import com.dong.judge.service.UserService;
+import com.dong.judge.util.UserUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -15,8 +17,6 @@ import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,61 +54,19 @@ public class NotificationController {
         }
 
         try {
-            // 获取当前用户ID
-            String userId = (String) StpUtil.getLoginId();
+            String userId=UserUtil.getUserId();
+            if (userId == null) {
+                return Result.error("用户不存在");
+            }
+            // 获取通知列表及其状态
+            Map<String, Object> notificationsWithStatus = notificationService.getUserNotificationsWithStatus(userId);
             
-            // 获取通知列表
-            List<Notification> notifications = notificationService.getUserNotifications(userId);
-            
-            // 获取未读通知数量
-            long unreadCount = notificationService.getUnreadCount(userId);
-            
-            // 构建返回数据
-            Map<String, Object> data = new HashMap<>();
-            data.put("notifications", notifications);
-            data.put("unreadCount", unreadCount);
-            
-            return Result.success(data);
+            return Result.success(notificationsWithStatus);
         } catch (Exception e) {
             return Result.error("获取通知列表失败: " + e.getMessage());
         }
     }
     
-    /**
-     * 标记通知为已读
-     *
-     * @param notificationId 通知ID
-     * @return 操作结果
-     */
-    @PostMapping("/read/{notificationId}")
-    @Operation(summary = "标记通知为已读", description = "将指定通知标记为已读状态")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "标记成功"),
-            @ApiResponse(responseCode = "400", description = "请求参数错误"),
-            @ApiResponse(responseCode = "401", description = "未登录或登录已过期")
-    })
-    public Result<?> markAsRead(@PathVariable String notificationId) {
-        // 检查用户是否已登录
-        if (!StpUtil.isLogin()) {
-            return Result.error(401, "未登录或登录已过期");
-        }
-
-        try {
-            // 获取当前用户ID
-            String userId = (String) StpUtil.getLoginId();
-            
-            // 标记为已读
-            boolean success = notificationService.markAsRead(notificationId, userId);
-            
-            if (!success) {
-                return Result.error("标记通知为已读失败，可能通知不存在或无权限");
-            }
-            
-            return Result.success("通知已标记为已读");
-        } catch (Exception e) {
-            return Result.error("标记通知为已读失败: " + e.getMessage());
-        }
-    }
     
     /**
      * 标记所有通知为已读
@@ -128,11 +86,18 @@ public class NotificationController {
         }
 
         try {
-            // 获取当前用户ID
-            String userId = (String) StpUtil.getLoginId();
+            // 获取当前用户邮箱
+            String email = (String) StpUtil.getLoginId();
+            // 获取用户信息
+            User user = userService.getByEmail(email);
+            if (user == null) {
+                return Result.error("用户不存在");
+            }
+            // 获取用户ID
+            Long userId = user.getId();
             
             // 标记所有为已读
-            boolean success = notificationService.markAllAsRead(userId);
+            boolean success = notificationService.markAllAsRead(userId.toString());
             
             if (!success) {
                 return Result.error("标记所有通知为已读失败");
@@ -174,7 +139,9 @@ public class NotificationController {
             }
             notification.setReceiverId(receiverId);
             
-            // 保存通知
+            // 保存通知 - NotificationServiceImpl会处理全局通知的逻辑
+            // 如果是全局通知(receiverId="all")，会为每个用户创建独立的通知记录
+            // 如果是单个用户的通知，则直接创建一条记录
             Notification createdNotification = notificationService.createNotification(notification);
             
             return Result.success("通知创建成功", createdNotification);
@@ -212,4 +179,76 @@ public class NotificationController {
             return Result.error("删除通知失败: " + e.getMessage());
         }
     }
+    
+    /**
+     * 删除用户的通知（仅删除当前用户的通知状态，不删除通知本身）
+     *
+     * @param notificationId 通知ID
+     * @return 删除结果
+     */
+    @DeleteMapping("/delete-user/{notificationId}")
+    @Operation(summary = "删除用户通知", description = "删除当前用户的指定通知（仅删除用户通知状态，不删除通知本身）")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "通知删除成功"),
+            @ApiResponse(responseCode = "400", description = "请求参数错误"),
+            @ApiResponse(responseCode = "401", description = "未登录或登录已过期")
+    })
+    public Result<?> deleteUserNotification(@PathVariable String notificationId) {
+        // 检查用户是否已登录
+        if (!StpUtil.isLogin()) {
+            return Result.error(401, "未登录或登录已过期");
+        }
+
+        try {
+            // 获取当前用户ID
+            String userId = (String) StpUtil.getLoginId();
+            
+            // 删除用户通知状态
+            boolean success = notificationService.deleteUserNotification(userId, notificationId);
+            
+            if (!success) {
+                return Result.error("删除通知失败，可能通知不存在或无权限");
+            }
+            
+            return Result.success("通知删除成功");
+        } catch (Exception e) {
+            return Result.error("删除通知失败: " + e.getMessage());
+        }
+    }
+    /**
+     * 标记通知为已读
+     *
+     * @param notificationId 通知ID
+     * @return 操作结果
+     */
+    @PostMapping("/read/{notificationId}")
+    @Operation(summary = "标记通知为已读", description = "将指定通知标记为已读状态")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "标记成功"),
+            @ApiResponse(responseCode = "400", description = "请求参数错误"),
+            @ApiResponse(responseCode = "401", description = "未登录或登录已过期")
+    })
+    public Result<?> markAsRead(@PathVariable String notificationId) {
+        // 检查用户是否已登录
+        if (!StpUtil.isLogin()) {
+            return Result.error(401, "未登录或登录已过期");
+        }
+
+        try {
+            // 获取当前用户ID
+            String userId = (String) StpUtil.getLoginId();
+            
+            // 标记为已读
+            boolean success = notificationService.markAsRead(notificationId, userId);
+            
+            if (!success) {
+                return Result.error("标记通知为已读失败，可能通知不存在或无权限");
+            }
+            
+            return Result.success("通知已标记为已读");
+        } catch (Exception e) {
+            return Result.error("标记通知为已读失败: " + e.getMessage());
+        }
+    }
 }
+    
