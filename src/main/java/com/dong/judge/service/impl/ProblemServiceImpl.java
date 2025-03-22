@@ -8,6 +8,8 @@ import com.dong.judge.service.ProblemService;
 import com.dong.judge.service.TestGroupService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -189,5 +191,11 @@ public class ProblemServiceImpl implements ProblemService {
     public List<Problem> getAllProblems() {
         // 获取所有题目并按创建时间降序排序
         return problemRepository.findAll();
+    }
+
+    @Override
+    public Page<Problem> getAllProblemsPage(PageRequest pageRequest) {
+        // 使用分页参数查询所有题目
+        return problemRepository.findAll(pageRequest);
     }
 }
