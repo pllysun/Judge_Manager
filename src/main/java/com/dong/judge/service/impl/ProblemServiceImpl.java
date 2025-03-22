@@ -9,6 +9,7 @@ import com.dong.judge.service.TestGroupService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 /**
  * 题目服务实现类
@@ -197,5 +199,63 @@ public class ProblemServiceImpl implements ProblemService {
     public Page<Problem> getAllProblemsPage(PageRequest pageRequest) {
         // 使用分页参数查询所有题目
         return problemRepository.findAll(pageRequest);
+    }
+    
+    @Override
+    public Page<Problem> searchProblemsWithConditions(PageRequest pageRequest, String difficulty, String keyword, String tag) {
+        // 获取所有题目
+        List<Problem> allProblems = problemRepository.findAll();
+        
+        // 应用过滤条件
+        List<Problem> filteredProblems = allProblems.stream()
+                // 按难度类型过滤（简单、中等、困难）
+                .filter(problem -> {
+                    if (difficulty == null || difficulty.isEmpty()) {
+                        return true; // 不过滤
+                    }
+                    
+                    // 获取题目的难度级别枚举
+                    DifficultyLevel level = problem.getDifficultyLevel();
+                    if (level == null) {
+                        return false;
+                    }
+                    
+                    // 根据难度类型过滤
+                    return level.getDifficulty().equals(difficulty);
+                })
+                // 按关键词过滤（标题）
+                .filter(problem -> {
+                    if (keyword == null || keyword.isEmpty()) {
+                        return true; // 不过滤
+                    }
+                    
+                    return problem.getTitle() != null && 
+                           problem.getTitle().toLowerCase().contains(keyword.toLowerCase());
+                })
+                // 按标签过滤
+                .filter(problem -> {
+                    if (tag == null || tag.isEmpty()) {
+                        return true; // 不过滤
+                    }
+                    
+                    return problem.getTags() != null && 
+                           problem.getTags().contains(tag);
+                })
+                .collect(Collectors.toList());
+        
+        // 手动实现分页
+        int start = (int) pageRequest.getOffset();
+        int end = Math.min((start + pageRequest.getPageSize()), filteredProblems.size());
+        
+        // 如果起始位置超出列表大小，返回空列表
+        if (start >= filteredProblems.size()) {
+            return new PageImpl<>(new ArrayList<>(), pageRequest, filteredProblems.size());
+        }
+        
+        // 获取当前页的数据
+        List<Problem> pageContent = filteredProblems.subList(start, end);
+        
+        // 创建分页结果
+        return new PageImpl<>(pageContent, pageRequest, filteredProblems.size());
     }
 }

@@ -102,4 +102,15 @@ public interface ProblemService {
      * @return 分页题目列表
      */
     Page<Problem> getAllProblemsPage(PageRequest pageRequest);
+    
+    /**
+     * 多条件查询题目并分页
+     *
+     * @param pageRequest 分页请求参数
+     * @param difficulty 难度类型（简单、中等、困难），可为null
+     * @param keyword 搜索关键词，可为null
+     * @param tag 标签，可为null
+     * @return 分页题目列表
+     */
+    Page<Problem> searchProblemsWithConditions(PageRequest pageRequest, String difficulty, String keyword, String tag);
 }
