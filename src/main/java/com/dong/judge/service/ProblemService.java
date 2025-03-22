@@ -85,4 +85,11 @@ public interface ProblemService {
      * @return 标签列表
      */
     List<String> getAllTags();
+    
+    /**
+     * 获取所有题目列表
+     *
+     * @return 题目列表
+     */
+    List<Problem> getAllProblems();
 }

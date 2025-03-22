@@ -1,5 +1,6 @@
 package com.dong.judge.controller;
 
+import com.dong.judge.model.dto.problem.ProblemDTO;
 import com.dong.judge.model.enums.DifficultyLevel;
 import com.dong.judge.model.pojo.judge.Problem;
 import com.dong.judge.model.vo.Result;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 题目控制器
@@ -91,11 +93,12 @@ public class ProblemController {
      */
     @GetMapping("/{id}")
     @Operation(summary = "获取题目详情", description = "根据ID获取题目详细信息")
-    public Result<Problem> getProblemById(
+    public Result<ProblemDTO> getProblemById(
             @PathVariable("id") @Parameter(description = "题目ID") String id) {
         try {
             Problem problem = problemService.getProblemById(id);
-            return Result.success(problem);
+            ProblemDTO problemDTO = ProblemDTO.fromProblem(problem);
+            return Result.success(problemDTO);
         } catch (Exception e) {
             log.error("获取题目详情失败", e);
             return Result.error("获取题目详情失败: " + e.getMessage());
@@ -103,22 +106,22 @@ public class ProblemController {
     }
 
     /**
-     * 获取用户的题目列表
+     * 获取所有题目列表
      *
      * @return 题目列表
      */
     @GetMapping
-    @Operation(summary = "获取用户的题目列表", description = "获取当前用户创建的所有题目")
-    public Result<List<Problem>> getUserProblems() {
-        // 从会话中获取用户ID
-        String userId = UserUtil.getUserId();
-        
+    @Operation(summary = "获取所有题目列表", description = "获取系统中的所有题目")
+    public Result<List<ProblemDTO>> getAllProblems() {
         try {
-            List<Problem> problems = problemService.getUserProblems(userId);
-            return Result.success(problems);
+            List<Problem> problems = problemService.getAllProblems();
+            List<ProblemDTO> problemDTOs = problems.stream()
+                    .map(ProblemDTO::fromProblem)
+                    .collect(Collectors.toList());
+            return Result.success(problemDTOs);
         } catch (Exception e) {
-            log.error("获取用户题目列表失败", e);
-            return Result.error("获取用户题目列表失败: " + e.getMessage());
+            log.error("获取题目列表失败", e);
+            return Result.error("获取题目列表失败: " + e.getMessage());
         }
     }
 
@@ -152,14 +155,17 @@ public class ProblemController {
      */
     @GetMapping("/search")
     @Operation(summary = "搜索题目", description = "根据关键词搜索题目")
-    public Result<List<Problem>> searchProblems(
+    public Result<List<ProblemDTO>> searchProblems(
             @RequestParam("keyword") @Parameter(description = "搜索关键词") String keyword) {
         // 从会话中获取用户ID
         String userId = UserUtil.getUserId();
         
         try {
             List<Problem> problems = problemService.searchProblems(userId, keyword);
-            return Result.success(problems);
+            List<ProblemDTO> problemDTOs = problems.stream()
+                    .map(ProblemDTO::fromProblem)
+                    .collect(Collectors.toList());
+            return Result.success(problemDTOs);
         } catch (Exception e) {
             log.error("搜索题目失败", e);
             return Result.error("搜索题目失败: " + e.getMessage());
@@ -174,7 +180,7 @@ public class ProblemController {
      */
     @GetMapping("/difficulty/{level}")
     @Operation(summary = "按难度级别查询题目", description = "根据难度级别查询题目")
-    public Result<List<Problem>> getProblemsByDifficulty(
+    public Result<List<ProblemDTO>> getProblemsByDifficulty(
             @PathVariable("level") @Parameter(description = "难度级别") Integer level) {
         // 从会话中获取用户ID
         String userId = UserUtil.getUserId();
@@ -184,7 +190,10 @@ public class ProblemController {
             validateDifficulty(level);
             
             List<Problem> problems = problemService.getProblemsByDifficulty(userId, level);
-            return Result.success(problems);
+            List<ProblemDTO> problemDTOs = problems.stream()
+                    .map(ProblemDTO::fromProblem)
+                    .collect(Collectors.toList());
+            return Result.success(problemDTOs);
         } catch (Exception e) {
             log.error("按难度级别查询题目失败", e);
             return Result.error("按难度级别查询题目失败: " + e.getMessage());
@@ -199,14 +208,17 @@ public class ProblemController {
      */
     @GetMapping("/tag/{tag}")
     @Operation(summary = "按标签查询题目", description = "根据标签查询题目")
-    public Result<List<Problem>> getProblemsByTag(
+    public Result<List<ProblemDTO>> getProblemsByTag(
             @PathVariable("tag") @Parameter(description = "标签") String tag) {
         // 从会话中获取用户ID
         String userId = UserUtil.getUserId();
         
         try {
             List<Problem> problems = problemService.getProblemsByTag(userId, tag);
-            return Result.success(problems);
+            List<ProblemDTO> problemDTOs = problems.stream()
+                    .map(ProblemDTO::fromProblem)
+                    .collect(Collectors.toList());
+            return Result.success(problemDTOs);
         } catch (Exception e) {
             log.error("按标签查询题目失败", e);
             return Result.error("按标签查询题目失败: " + e.getMessage());

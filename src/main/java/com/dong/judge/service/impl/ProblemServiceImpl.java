@@ -184,4 +184,10 @@ public class ProblemServiceImpl implements ProblemService {
                 .sorted()
                 .toList();
     }
+    
+    @Override
+    public List<Problem> getAllProblems() {
+        // 获取所有题目并按创建时间降序排序
+        return problemRepository.findAll();
+    }
 }

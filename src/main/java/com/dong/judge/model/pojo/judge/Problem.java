@@ -52,4 +52,32 @@ public class Problem {
     
     @Schema(description = "更新时间")
     private LocalDateTime updatedAt;
+    
+    @Schema(description = "提交总数")
+    @Builder.Default
+    private Integer submissionCount = 0;
+    
+    @Schema(description = "正确提交数量")
+    @Builder.Default
+    private Integer acceptedCount = 0;
+    
+    @Schema(description = "答案错误数量")
+    @Builder.Default
+    private Integer wrongAnswerCount = 0;
+    
+    @Schema(description = "超时数量")
+    @Builder.Default
+    private Integer timeExceededCount = 0;
+    
+    @Schema(description = "编译错误数量")
+    @Builder.Default
+    private Integer compileErrorCount = 0;
+    
+    @Schema(description = "内存超限数量")
+    @Builder.Default
+    private Integer memoryExceededCount = 0;
+    
+    @Schema(description = "通过百分比")
+    @Builder.Default
+    private Double acceptedRate = 0.0;
 }
