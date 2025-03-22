@@ -1,6 +1,8 @@
 package com.dong.judge.service;
 
 import com.dong.judge.model.pojo.judge.Problem;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
@@ -92,4 +94,12 @@ public interface ProblemService {
      * @return 题目列表
      */
     List<Problem> getAllProblems();
+    
+    /**
+     * 分页获取所有题目列表
+     *
+     * @param pageRequest 分页请求参数
+     * @return 分页题目列表
+     */
+    Page<Problem> getAllProblemsPage(PageRequest pageRequest);
 }

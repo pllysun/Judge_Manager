@@ -3,6 +3,7 @@ package com.dong.judge.controller;
 import com.dong.judge.model.dto.problem.ProblemDTO;
 import com.dong.judge.model.enums.DifficultyLevel;
 import com.dong.judge.model.pojo.judge.Problem;
+import com.dong.judge.model.vo.PageResult;
 import com.dong.judge.model.vo.Result;
 import com.dong.judge.service.ProblemService;
 import com.dong.judge.util.UserUtil;
@@ -12,6 +13,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -122,6 +126,39 @@ public class ProblemController {
         } catch (Exception e) {
             log.error("获取题目列表失败", e);
             return Result.error("获取题目列表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 分页获取题目列表
+     *
+     * @param pageNum 页码（从1开始）
+     * @param pageSize 每页大小
+     * @return 分页题目列表
+     */
+    @GetMapping("/page")
+    @Operation(summary = "分页获取题目列表", description = "分页获取系统中的所有题目")
+    public Result<PageResult<ProblemDTO>> getProblemsPage(
+            @RequestParam(value = "pageNum", defaultValue = "1") @Parameter(description = "页码，从1开始") Integer pageNum,
+            @RequestParam(value = "pageSize", defaultValue = "10") @Parameter(description = "每页大小") Integer pageSize) {
+        try {
+            // 创建分页请求（Spring Data页码从0开始，需要减1）
+            PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+            
+            // 查询分页数据
+            Page<Problem> problemPage = problemService.getAllProblemsPage(pageRequest);
+            
+            // 转换为DTO
+            List<ProblemDTO> problemDTOs = problemPage.getContent().stream()
+                    .map(ProblemDTO::fromProblem)
+                    .collect(Collectors.toList());
+            
+            // 创建分页结果
+            PageResult<ProblemDTO> pageResult = PageResult.fromPage(problemPage, problemDTOs);
+            return Result.success(pageResult);
+        } catch (Exception e) {
+            log.error("分页获取题目列表失败", e);
+            return Result.error("分页获取题目列表失败: " + e.getMessage());
         }
     }
 
