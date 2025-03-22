@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
@@ -192,6 +193,7 @@ public class EmailNotificationController {
     /**
      * 邮件类型枚举
      */
+    @Getter
     private enum EmailType {
         PASSWORD_RESET("password_reset"),
         REGISTRATION("verification");
@@ -202,8 +204,5 @@ public class EmailNotificationController {
             this.redisPrefix = redisPrefix;
         }
 
-        public String getRedisPrefix() {
-            return redisPrefix;
-        }
     }
 }

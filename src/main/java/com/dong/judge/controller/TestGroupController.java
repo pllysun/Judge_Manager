@@ -5,6 +5,7 @@ import com.dong.judge.model.pojo.judge.TestGroup;
 import com.dong.judge.model.vo.Result;
 import com.dong.judge.model.vo.judge.TestGroupResult;
 import com.dong.judge.service.TestGroupService;
+import com.dong.judge.util.UserUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,7 +38,7 @@ public class TestGroupController {
     @Operation(summary = "创建测试集", description = "创建一个新的测试集并执行测试")
     public Result<TestGroupResult> createTestGroup(@RequestBody @Valid TestGroup testGroup) {
         // 从会话中获取用户ID
-        String userId = (String) StpUtil.getLoginId();
+        String userId = UserUtil.getUserId();
         
         try {
             TestGroupResult result = testGroupService.createTestGroup(testGroup, userId);
@@ -61,7 +62,7 @@ public class TestGroupController {
             @PathVariable("id") @Parameter(description = "测试集ID") String id,
             @RequestBody @Valid TestGroup testGroup) {
         // 从会话中获取用户ID
-        String userId = (String) StpUtil.getLoginId();
+        String userId = UserUtil.getUserId();
         
         try {
             testGroup.setId(id);
@@ -101,7 +102,7 @@ public class TestGroupController {
     @Operation(summary = "获取用户的测试集列表", description = "获取当前用户创建的所有测试集")
     public Result<List<TestGroup>> getUserTestGroups() {
         // 从会话中获取用户ID
-        String userId = (String) StpUtil.getLoginId();
+        String userId = UserUtil.getUserId();
         
         try {
             List<TestGroup> testGroups = testGroupService.getUserTestGroups(userId);
@@ -123,7 +124,7 @@ public class TestGroupController {
     public Result<Boolean> deleteTestGroup(
             @PathVariable("id") @Parameter(description = "测试集ID") String id) {
         // 从会话中获取用户ID
-        String userId = (String) StpUtil.getLoginId();
+        String userId = UserUtil.getUserId();
         
         try {
             boolean success = testGroupService.deleteTestGroup(id, userId);
@@ -145,7 +146,7 @@ public class TestGroupController {
     public Result<List<TestGroup>> searchTestGroups(
             @RequestParam("keyword") @Parameter(description = "搜索关键词") String keyword) {
         // 从会话中获取用户ID
-        String userId = (String) StpUtil.getLoginId();
+        String userId = UserUtil.getUserId();
         
         try {
             List<TestGroup> testGroups = testGroupService.searchTestGroups(userId, keyword);
