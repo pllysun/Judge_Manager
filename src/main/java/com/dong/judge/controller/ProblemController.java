@@ -1,6 +1,7 @@
 package com.dong.judge.controller;
 
 import com.dong.judge.model.dto.problem.ProblemDTO;
+import com.dong.judge.model.dto.problem.ProblemQueryDTO;
 import com.dong.judge.model.enums.DifficultyLevel;
 import com.dong.judge.model.pojo.judge.Problem;
 import com.dong.judge.model.vo.PageResult;
@@ -132,27 +133,19 @@ public class ProblemController {
     /**
      * 分页获取题目列表（支持多条件查询）
      *
-     * @param pageNum 页码（从1开始）
-     * @param pageSize 每页大小
-     * @param difficulty 难度类型（简单、中等、困难），可选
-     * @param keyword 搜索关键词，可选
-     * @param tags 标签列表，可选，多个标签用逗号分隔
+     * @param queryDTO 查询参数DTO，包含页码、每页大小、难度类型、关键词和标签列表
      * @return 分页题目列表
      */
-    @GetMapping("/page")
+    @PostMapping("/page")
     @Operation(summary = "分页获取题目列表", description = "分页获取系统中的题目，支持按难度、关键词和多标签筛选")
     public Result<PageResult<ProblemDTO>> getProblemsPage(
-            @RequestParam(value = "pageNum", defaultValue = "1") @Parameter(description = "页码，从1开始") Integer pageNum,
-            @RequestParam(value = "pageSize", defaultValue = "10") @Parameter(description = "每页大小") Integer pageSize,
-            @RequestParam(value = "difficulty", required = false) @Parameter(description = "难度类型（简单、中等、困难）") String difficulty,
-            @RequestParam(value = "keyword", required = false) @Parameter(description = "搜索关键词") String keyword,
-            @RequestParam(value = "tags", required = false) @Parameter(description = "标签列表") List<String> tags) {
+            @RequestBody @Parameter(description = "查询参数") ProblemQueryDTO queryDTO) {
         try {
             // 创建分页请求（Spring Data页码从0开始，需要减1）
-            PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
+            PageRequest pageRequest = PageRequest.of(queryDTO.getPageNum() - 1, queryDTO.getPageSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
             
             // 查询分页数据（使用多条件查询）
-            Page<Problem> problemPage = problemService.searchProblemsWithConditions(pageRequest, difficulty, keyword, tags);
+            Page<Problem> problemPage = problemService.searchProblemsWithConditions(pageRequest, queryDTO.getDifficulty(), queryDTO.getKeyword(), queryDTO.getTags());
             
             // 转换为DTO
             List<ProblemDTO> problemDTOs = problemPage.getContent().stream()
