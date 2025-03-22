@@ -17,6 +17,7 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -180,12 +181,16 @@ public class ProblemServiceImpl implements ProblemService {
         // 获取所有题目
         List<Problem> allProblems = problemRepository.findAll();
         
-        // 提取所有标签并去重
-        return allProblems.stream()
+        // 统计每个标签出现的次数
+        Map<String, Long> tagCountMap = allProblems.stream()
                 .filter(problem -> problem.getTags() != null && !problem.getTags().isEmpty())
                 .flatMap(problem -> problem.getTags().stream())
-                .distinct()
-                .sorted()
+                .collect(Collectors.groupingBy(tag -> tag, Collectors.counting()));
+        
+        // 按照标签出现次数降序排序
+        return tagCountMap.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .map(Map.Entry::getKey)
                 .toList();
     }
     
@@ -202,7 +207,7 @@ public class ProblemServiceImpl implements ProblemService {
     }
     
     @Override
-    public Page<Problem> searchProblemsWithConditions(PageRequest pageRequest, String difficulty, String keyword, String tag) {
+    public Page<Problem> searchProblemsWithConditions(PageRequest pageRequest, String difficulty, String keyword, List<String> tags) {
         // 获取所有题目
         List<Problem> allProblems = problemRepository.findAll();
         
@@ -232,14 +237,19 @@ public class ProblemServiceImpl implements ProblemService {
                     return problem.getTitle() != null && 
                            problem.getTitle().toLowerCase().contains(keyword.toLowerCase());
                 })
-                // 按标签过滤
+                // 按标签列表过滤
                 .filter(problem -> {
-                    if (tag == null || tag.isEmpty()) {
+                    if (tags == null || tags.isEmpty()) {
                         return true; // 不过滤
                     }
                     
-                    return problem.getTags() != null && 
-                           problem.getTags().contains(tag);
+                    // 如果题目没有标签，则不匹配
+                    if (problem.getTags() == null || problem.getTags().isEmpty()) {
+                        return false;
+                    }
+                    
+                    // 检查题目是否包含任一查询标签（OR逻辑）
+                    return tags.stream().anyMatch(tag -> problem.getTags().contains(tag));
                 })
                 .collect(Collectors.toList());
         

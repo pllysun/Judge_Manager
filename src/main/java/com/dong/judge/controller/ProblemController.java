@@ -136,23 +136,23 @@ public class ProblemController {
      * @param pageSize 每页大小
      * @param difficulty 难度类型（简单、中等、困难），可选
      * @param keyword 搜索关键词，可选
-     * @param tag 标签，可选
+     * @param tags 标签列表，可选，多个标签用逗号分隔
      * @return 分页题目列表
      */
     @GetMapping("/page")
-    @Operation(summary = "分页获取题目列表", description = "分页获取系统中的题目，支持按难度、关键词和标签筛选")
+    @Operation(summary = "分页获取题目列表", description = "分页获取系统中的题目，支持按难度、关键词和多标签筛选")
     public Result<PageResult<ProblemDTO>> getProblemsPage(
             @RequestParam(value = "pageNum", defaultValue = "1") @Parameter(description = "页码，从1开始") Integer pageNum,
             @RequestParam(value = "pageSize", defaultValue = "10") @Parameter(description = "每页大小") Integer pageSize,
             @RequestParam(value = "difficulty", required = false) @Parameter(description = "难度类型（简单、中等、困难）") String difficulty,
             @RequestParam(value = "keyword", required = false) @Parameter(description = "搜索关键词") String keyword,
-            @RequestParam(value = "tag", required = false) @Parameter(description = "标签") String tag) {
+            @RequestParam(value = "tags", required = false) @Parameter(description = "标签列表") List<String> tags) {
         try {
             // 创建分页请求（Spring Data页码从0开始，需要减1）
             PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
             
             // 查询分页数据（使用多条件查询）
-            Page<Problem> problemPage = problemService.searchProblemsWithConditions(pageRequest, difficulty, keyword, tag);
+            Page<Problem> problemPage = problemService.searchProblemsWithConditions(pageRequest, difficulty, keyword, tags);
             
             // 转换为DTO
             List<ProblemDTO> problemDTOs = problemPage.getContent().stream()
