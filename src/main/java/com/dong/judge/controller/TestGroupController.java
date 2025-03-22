@@ -20,7 +20,7 @@ import java.util.List;
  * 测试集控制器
  */
 @RestController
-@RequestMapping("/api/test-groups")
+@RequestMapping("/test-groups")
 @Tag(name = "测试集管理", description = "测试集的创建、更新、查询和删除")
 @Slf4j
 public class TestGroupController {

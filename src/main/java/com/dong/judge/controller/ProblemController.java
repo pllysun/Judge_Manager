@@ -19,7 +19,7 @@ import java.util.List;
  * 题目控制器
  */
 @RestController
-@RequestMapping("/api/problems")
+@RequestMapping("/problem")
 @Tag(name = "题目管理", description = "题目的创建、更新、查询和删除")
 @Slf4j
 public class ProblemController {
