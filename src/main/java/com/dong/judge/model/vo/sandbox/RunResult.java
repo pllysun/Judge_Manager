@@ -50,4 +50,18 @@ public class RunResult {
      * 标准错误输出内容
      */
     private String stderr;
+    
+    /**
+     * 错误信息
+     */
+    private String errorMessage;
+    
+    /**
+     * 判断运行是否成功
+     * 
+     * @return 如果运行状态为Accepted或退出状态码为0，则返回true
+     */
+    public boolean isSuccess() {
+        return "Accepted".equals(status) || exitStatus == 0;
+    }
 }

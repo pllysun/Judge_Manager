@@ -135,6 +135,8 @@ public class TestGroupServiceImpl implements TestGroupService {
         if (testGroup.getTestCases() == null || testGroup.getTestCases().isEmpty()) {
             result.setTestCaseResults(new ArrayList<>());
             result.calculateStatistics();
+            // 保存测试集（即使没有测试用例）
+            testGroupRepository.save(testGroup);
             return result;
         }
 
@@ -151,20 +153,15 @@ public class TestGroupServiceImpl implements TestGroupService {
 
             // 检查编译结果
             if (!compileResult.isSuccess()) {
-                // 编译失败，创建包含编译错误的结果
-                result.setCompileError(compileResult.getErrorMessage());
-                result.setTestCaseResults(createCompileErrorResults(testGroup.getTestCases(), compileResult.getErrorMessage()));
-                result.calculateStatistics();
-                return result;
+                // 编译失败，抛出异常而不是返回结果
+                throw new RuntimeException("编译失败: " + compileResult.getErrorMessage());
             }
 
             fileId = compileResult.getFileId();
         } catch (Exception e) {
             log.error("编译代码失败", e);
-            result.setCompileError("编译服务异常: " + e.getMessage());
-            result.setTestCaseResults(createCompileErrorResults(testGroup.getTestCases(), "编译服务异常: " + e.getMessage()));
-            result.calculateStatistics();
-            return result;
+            // 编译服务异常也抛出异常，而不是返回结果
+            throw new RuntimeException("编译服务异常: " + e.getMessage(), e);
         }
 
         // 3. 使用虚拟线程并行执行所有测试用例
@@ -204,6 +201,23 @@ public class TestGroupServiceImpl implements TestGroupService {
         // 5. 设置结果并计算统计信息
         result.setTestCaseResults(testCaseResults);
         result.calculateStatistics();
+        
+        // 6. 将测试结果保存到TestGroup对象中
+        testGroup.setTestCaseResults(result.getTestCaseResults());
+        testGroup.setTotalCount(result.getTotalCount());
+        testGroup.setPassedCount(result.getPassedCount());
+        testGroup.setTotalTime(result.getTotalTime());
+        testGroup.setAvgTime(result.getAvgTime());
+        testGroup.setTotalMemory(result.getTotalMemory());
+        testGroup.setAvgMemory(result.getAvgMemory());
+        testGroup.setTotalRunTime(result.getTotalRunTime());
+        testGroup.setAvgRunTime(result.getAvgRunTime());
+        testGroup.setCompileError(result.getCompileError());
+        testGroup.setAllPassed(result.isAllPassed());
+        
+        // 7. 保存测试集结果到数据库
+        testGroupRepository.save(testGroup);
+        
         return result;
     }
 
@@ -227,6 +241,18 @@ public class TestGroupServiceImpl implements TestGroupService {
 
             // 运行代码
             RunResult runResult = sandboxService.runCode(runRequest);
+            
+            // 检查运行结果是否有错误
+            if (!runResult.isSuccess()) {
+                // 如果运行失败，直接返回错误结果
+                return TestCaseResult.builder()
+                        .id(testCase.getId())
+                        .time(0L)
+                        .memory(0L)
+                        .runTime(0L)
+                        .stdout("Runtime Error: " + runResult.getErrorMessage())
+                        .build();
+            }
 
             // 构建测试用例结果，只保留必要字段
             return TestCaseResult.builder()

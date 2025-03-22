@@ -38,7 +38,14 @@ public class TestGroupController {
     @Operation(summary = "创建测试集", description = "创建一个新的测试集并执行测试")
     public Result<TestGroupResult> createTestGroup(@RequestBody @Valid TestGroup testGroup) {
         // 从会话中获取用户ID
-        String userId = UserUtil.getUserId();
+        String userId;
+        try{
+             userId = UserUtil.getUserId();
+        }catch (Exception e){
+            log.error("获取用户ID失败", e);
+            return Result.error("获取用户ID失败: " + e.getMessage());
+        }
+
         
         try {
             TestGroupResult result = testGroupService.createTestGroup(testGroup, userId);

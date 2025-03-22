@@ -1,12 +1,10 @@
 package com.dong.judge.controller;
 
 
-import com.dong.judge.config.SandboxConfig;
 import com.dong.judge.model.dto.sandbox.CodeExecuteRequest;
 import com.dong.judge.model.vo.Result;
 import com.dong.judge.service.SandboxService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

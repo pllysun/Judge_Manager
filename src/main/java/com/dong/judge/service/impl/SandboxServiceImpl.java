@@ -41,8 +41,8 @@ package com.dong.judge.service.impl;
         @Override
         public CodeExecuteResult executeCode(CodeExecuteRequest request) {
             try {
-                // 1. 获取语言配置
-                SandboxConfig.LanguageConfig langConfig = sandboxConfig.getLanguages().get(request.getLanguage());
+                // 1. 获取语言配置（支持别名）
+                SandboxConfig.LanguageConfig langConfig = sandboxConfig.getLanguageConfig(request.getLanguage());
                 if (langConfig == null) {
                     return buildErrorResult("不支持的语言: " + request.getLanguage());
                 }
@@ -107,8 +107,8 @@ package com.dong.judge.service.impl;
         @Override
         public CompileResult compileCode(CompileRequest request) {
             try {
-                // 1. 获取语言配置
-                SandboxConfig.LanguageConfig langConfig = sandboxConfig.getLanguages().get(request.getLanguage());
+                // 1. 获取语言配置（支持别名）
+                SandboxConfig.LanguageConfig langConfig = sandboxConfig.getLanguageConfig(request.getLanguage());
                 if (langConfig == null) {
                     return CompileResult.builder()
                             .success(false)
@@ -172,8 +172,8 @@ package com.dong.judge.service.impl;
         @Override
         public RunResult runCode(RunRequest request) {
             try {
-                // 1. 获取语言配置
-                SandboxConfig.LanguageConfig langConfig = sandboxConfig.getLanguages().get(request.getLanguage());
+                // 1. 获取语言配置（支持别名）
+                SandboxConfig.LanguageConfig langConfig = sandboxConfig.getLanguageConfig(request.getLanguage());
                 if (langConfig == null) {
                     return RunResult.builder()
                             .status("Error")
