@@ -146,6 +146,11 @@ public class CodeServiceImpl implements CodeService {
         return null;
     }
 
+    @Override
+    public TestCaseSetResult submitCode(CodeRunRequest request) {
+        return null;
+    }
+
     /**
      * 执行单个测试用例
      */

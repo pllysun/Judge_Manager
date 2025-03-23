@@ -46,4 +46,16 @@ public class CodeController {
         TestCaseSetResult result = codeService.runCode(request, userId);
         return Result.success(result);
     }
+
+
+
+    @PostMapping("/submit")
+    @Operation(summary = "提交代码", description = "提交代码并返回测试用例执行结果")
+    public Result<TestCaseSetResult> submitCode(@RequestBody @Valid CodeRunRequest request) {
+        log.info("收到代码提交请求: problemId={}, language={}", request.getProblemId(), request.getLanguage());
+
+        // 执行代码并返回结果
+        TestCaseSetResult result = codeService.submitCode(request);
+        return Result.success(result);
+    }
 }
