@@ -1,12 +1,16 @@
 package com.dong.judge.controller;
 
+import com.dong.judge.model.dto.code.TestCase;
+import com.dong.judge.model.dto.code.TestCaseResult;
 import com.dong.judge.model.dto.problem.ProblemDTO;
-import com.dong.judge.model.dto.problem.ProblemQueryDTO;
+import com.dong.judge.model.dto.problem.TestCaseDTO;
 import com.dong.judge.model.enums.DifficultyLevel;
 import com.dong.judge.model.pojo.judge.Problem;
+import com.dong.judge.model.pojo.judge.TestGroup;
 import com.dong.judge.model.vo.PageResult;
 import com.dong.judge.model.vo.Result;
 import com.dong.judge.service.ProblemService;
+import com.dong.judge.service.TestGroupService;
 import com.dong.judge.util.UserUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,6 +38,9 @@ public class ProblemController {
 
     @Autowired
     private ProblemService problemService;
+    
+    @Autowired
+    private TestGroupService testGroupService;
 
     /**
      * 创建题目
@@ -133,19 +141,27 @@ public class ProblemController {
     /**
      * 分页获取题目列表（支持多条件查询）
      *
-     * @param queryDTO 查询参数DTO，包含页码、每页大小、难度类型、关键词和标签列表
+     * @param pageNum 页码（从1开始）
+     * @param pageSize 每页大小
+     * @param difficulty 难度类型（简单、中等、困难），可选
+     * @param keyword 搜索关键词，可选
+     * @param tags 标签列表，可选，多个标签用逗号分隔
      * @return 分页题目列表
      */
-    @PostMapping("/page")
+    @GetMapping("/page")
     @Operation(summary = "分页获取题目列表", description = "分页获取系统中的题目，支持按难度、关键词和多标签筛选")
     public Result<PageResult<ProblemDTO>> getProblemsPage(
-            @RequestBody @Parameter(description = "查询参数") ProblemQueryDTO queryDTO) {
+            @RequestParam(value = "pageNum", defaultValue = "1") @Parameter(description = "页码，从1开始") Integer pageNum,
+            @RequestParam(value = "pageSize", defaultValue = "10") @Parameter(description = "每页大小") Integer pageSize,
+            @RequestParam(value = "difficulty", required = false) @Parameter(description = "难度类型（简单、中等、困难）") String difficulty,
+            @RequestParam(value = "keyword", required = false) @Parameter(description = "搜索关键词") String keyword,
+            @RequestParam(value = "tags", required = false) @Parameter(description = "标签列表") List<String> tags) {
         try {
             // 创建分页请求（Spring Data页码从0开始，需要减1）
-            PageRequest pageRequest = PageRequest.of(queryDTO.getPageNum() - 1, queryDTO.getPageSize(), Sort.by(Sort.Direction.DESC, "createdAt"));
+            PageRequest pageRequest = PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.DESC, "createdAt"));
             
             // 查询分页数据（使用多条件查询）
-            Page<Problem> problemPage = problemService.searchProblemsWithConditions(pageRequest, queryDTO.getDifficulty(), queryDTO.getKeyword(), queryDTO.getTags());
+            Page<Problem> problemPage = problemService.searchProblemsWithConditions(pageRequest, difficulty, keyword, tags);
             
             // 转换为DTO
             List<ProblemDTO> problemDTOs = problemPage.getContent().stream()
@@ -275,6 +291,67 @@ public class ProblemController {
         } catch (Exception e) {
             log.error("获取所有标签失败", e);
             return Result.error("获取所有标签失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取题目的测试用例
+     *
+     * @param id 题目ID
+     * @return 测试用例列表（仅返回前两个）
+     */
+    @GetMapping("/{id}/test-cases")
+    @Operation(summary = "获取题目测试用例", description = "根据题目ID获取关联测试集的前两个测试用例")
+    public Result<List<TestCaseDTO>> getProblemTestCases(
+            @PathVariable("id") @Parameter(description = "题目ID") String id) {
+        try {
+            // 获取题目信息
+            Problem problem = problemService.getProblemById(id);
+            
+            // 检查题目是否关联了测试集
+            if (problem.getTestGroupId() == null || problem.getTestGroupId().isEmpty()) {
+                return Result.error("该题目未关联测试集");
+            }
+            
+            // 获取测试集信息
+            TestGroup testGroup = testGroupService.getTestGroupById(problem.getTestGroupId());
+            
+            // 检查测试集是否有测试用例
+            if (testGroup.getTestCases() == null || testGroup.getTestCases().isEmpty()) {
+                return Result.error("该题目的测试集没有测试用例");
+            }
+            
+            // 获取测试用例结果（如果有）
+            List<TestCaseResult> testCaseResults = testGroup.getTestCaseResults();
+            
+            // 创建返回结果列表
+            List<TestCaseDTO> testCaseDTOs = new ArrayList<>();
+            
+            // 获取前两个测试用例（或者全部，如果少于两个）
+            int count = Math.min(2, testGroup.getTestCases().size());
+            for (int i = 0; i < count; i++) {
+                TestCase testCase = testGroup.getTestCases().get(i);
+                String expectedOutput = "";
+                
+                // 如果有对应的测试结果，获取预期输出
+                if (testCaseResults != null && !testCaseResults.isEmpty() && i < testCaseResults.size()) {
+                    expectedOutput = testCaseResults.get(i).getStdout();
+                }
+                
+                // 创建DTO并添加到列表
+                TestCaseDTO testCaseDTO = TestCaseDTO.builder()
+                        .id(testCase.getId())
+                        .input(testCase.getInput())
+                        .expectedOutput(expectedOutput)
+                        .build();
+                
+                testCaseDTOs.add(testCaseDTO);
+            }
+            
+            return Result.success(testCaseDTOs);
+        } catch (Exception e) {
+            log.error("获取题目测试用例失败", e);
+            return Result.error("获取题目测试用例失败: " + e.getMessage());
         }
     }
     

@@ -32,8 +32,6 @@ public class SandboxConfig {
      */
     @PostConstruct
     public void initLanguageAliasMap() {
-        // 打印原始配置信息，查看是否正确加载
-        System.out.println("原始语言配置: " + languages.keySet());
         
         // 首先添加所有标准语言标识符到映射表
         for (String lang : languages.keySet()) {
@@ -82,12 +80,6 @@ public class SandboxConfig {
             normalizedLanguageMap.put("python3", pythonLang);
             normalizedLanguageMap.put("Python", pythonLang);
             normalizedLanguageMap.put("Python3", pythonLang);
-        }
-        
-        // 打印调试信息，查看所有映射
-        System.out.println("语言映射表初始化完成，共 " + normalizedLanguageMap.size() + " 个映射");
-        for (Map.Entry<String, String> entry : normalizedLanguageMap.entrySet()) {
-            System.out.println("别名: '" + entry.getKey() + "' -> '" + entry.getValue() + "'");
         }
     }
     
