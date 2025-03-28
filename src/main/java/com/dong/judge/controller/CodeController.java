@@ -2,6 +2,7 @@ package com.dong.judge.controller;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.dong.judge.model.dto.code.CodeRunRequest;
+import com.dong.judge.model.dto.code.CodeSubmitRequest;
 import com.dong.judge.model.dto.code.TestCaseSet;
 import com.dong.judge.model.dto.code.TestCaseSetResult;
 import com.dong.judge.model.vo.Result;
@@ -31,9 +32,9 @@ public class CodeController {
 
     private final CodeService codeService;
 
-    @PostMapping("/run")
-    @Operation(summary = "运行代码", description = "运行代码并返回测试用例执行结果")
-    public Result<TestCaseSetResult> runCode(@RequestBody @Valid CodeRunRequest request) {
+    @PostMapping("/submit")
+    @Operation(summary = "提交代码", description = "运行代码并返回测试用例执行结果")
+    public Result<TestCaseSetResult> submitCode(@RequestBody @Valid CodeSubmitRequest request) {
         log.info("收到代码运行请求: problemId={}, language={}", request.getProblemId(), request.getLanguage());
         
         // 获取当前登录用户ID
@@ -43,19 +44,17 @@ public class CodeController {
         }
         
         // 执行代码并返回结果
-        TestCaseSetResult result = codeService.runCode(request, userId);
+        TestCaseSetResult result = codeService.submitCode(request, userId);
         return Result.success(result);
     }
 
 
 
-    @PostMapping("/submit")
-    @Operation(summary = "提交代码", description = "提交代码并返回测试用例执行结果")
-    public Result<TestCaseSetResult> submitCode(@RequestBody @Valid CodeRunRequest request) {
-        log.info("收到代码提交请求: problemId={}, language={}", request.getProblemId(), request.getLanguage());
-
+    @PostMapping("/run")
+    @Operation(summary = "运行代码", description = "提交代码并返回测试用例执行结果")
+    public Result<TestCaseSetResult> runCode(@RequestBody @Valid CodeRunRequest request) {
         // 执行代码并返回结果
-        TestCaseSetResult result = codeService.submitCode(request);
+        TestCaseSetResult result = codeService.runCode(request);
         return Result.success(result);
     }
 }

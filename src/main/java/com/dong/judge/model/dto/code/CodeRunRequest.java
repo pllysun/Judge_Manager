@@ -1,31 +1,23 @@
 package com.dong.judge.model.dto.code;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/**
- * OJ风格代码执行请求
- */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(description = "OJ风格代码执行请求")
+@Schema(description = "运行代码")
 public class CodeRunRequest {
-    @NotBlank(message = "代码内容不能为空")
-    @Schema(description = "代码内容", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "代码", example = "print('Hello, World!')")
     private String code;
 
-    @NotBlank(message = "编程语言不能为空")
-    @Schema(description = "编程语言", requiredMode = Schema.RequiredMode.REQUIRED, example = "java")
+    @Schema(description = "语言", example = "python")
     private String language;
 
-    @NotNull(message = "题目ID不能为空")
-    @Schema(description = "题目ID", requiredMode = Schema.RequiredMode.REQUIRED)
-    private String problemId;
+    @Schema(description = "输入")
+    private String input;
 }
