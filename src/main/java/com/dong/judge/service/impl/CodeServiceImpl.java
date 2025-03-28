@@ -317,10 +317,11 @@ public class CodeServiceImpl implements CodeService {
     }
 
     /**
-     * 保存提交记录
+     * 保存提交记录并更新题目统计数据
      */
     private void saveSubmission(CodeSubmitRequest request, String userId, TestCaseSetResult result) {
         try {
+            // 1. 保存提交记录
             Submission submission = Submission.builder()
                     .userId(userId)
                     .problemId(request.getProblemId())
@@ -336,8 +337,76 @@ public class CodeServiceImpl implements CodeService {
                     .build();
 
             submissionRepository.save(submission);
+            
+            // 2. 更新题目统计数据
+            updateProblemStatistics(request.getProblemId(), result);
         } catch (Exception e) {
             log.error("保存提交记录失败", e);
+        }
+    }
+    
+    /**
+     * 更新题目统计数据
+     */
+    private void updateProblemStatistics(String problemId, TestCaseSetResult result) {
+        try {
+            // 1. 获取题目信息
+            Problem problem = problemService.getProblemById(problemId);
+            if (problem == null) {
+                log.error("更新题目统计数据失败：题目不存在 {}", problemId);
+                return;
+            }
+            
+            // 2. 更新提交总数
+            problem.setSubmissionCount(problem.getSubmissionCount() + 1);
+            
+            // 3. 根据提交结果更新相应计数
+            if (result.getCompileError() != null) {
+                // 编译错误
+                problem.setCompileErrorCount(problem.getCompileErrorCount() + 1);
+            } else {
+                // 检查测试用例结果
+                boolean hasTimeExceeded = false;
+                boolean hasMemoryExceeded = false;
+                boolean hasWrongAnswer = false;
+                
+                for (TestCaseResult testResult : result.getTestCaseResults()) {
+                    String status = testResult.getStatus();
+                    if (status.contains("Time Limit Exceeded")) {
+                        hasTimeExceeded = true;
+                    } else if (status.contains("Memory Limit Exceeded")) {
+                        hasMemoryExceeded = true;
+                    } else if (!status.equals("Accepted") && !status.contains("Compile Error")) {
+                        hasWrongAnswer = true;
+                    }
+                }
+                
+                // 更新对应计数
+                if (result.isAllPassed()) {
+                    problem.setAcceptedCount(problem.getAcceptedCount() + 1);
+                } else if (hasTimeExceeded) {
+                    problem.setTimeExceededCount(problem.getTimeExceededCount() + 1);
+                } else if (hasMemoryExceeded) {
+                    problem.setMemoryExceededCount(problem.getMemoryExceededCount() + 1);
+                } else if (hasWrongAnswer) {
+                    problem.setWrongAnswerCount(problem.getWrongAnswerCount() + 1);
+                }
+            }
+            
+            // 4. 重新计算通过率
+            if (problem.getSubmissionCount() > 0) {
+                double acceptedRate = (double) problem.getAcceptedCount() / problem.getSubmissionCount() * 100;
+                problem.setAcceptedRate(Math.round(acceptedRate * 100) / 100.0); // 保留两位小数
+            }
+            
+            // 5. 更新题目
+            problem.setUpdatedAt(LocalDateTime.now());
+            problemService.updateProblem(problem, problem.getCreatorId());
+            
+            log.info("更新题目统计数据成功: problemId={}, submissionCount={}, acceptedRate={}", 
+                    problemId, problem.getSubmissionCount(), problem.getAcceptedRate());
+        } catch (Exception e) {
+            log.error("更新题目统计数据失败", e);
         }
     }
 }
