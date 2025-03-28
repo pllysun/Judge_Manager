@@ -47,7 +47,12 @@ public class ProblemServiceImpl implements ProblemService {
         
         // 设置创建者ID
         problem.setCreatorId(userId);
-        
+
+        // 设置题目ID（题目数量+1）
+        long problemCount = problemRepository.count(); // 获取当前题目总数
+        String newProblemId = String.valueOf(problemCount + 1); // 设置为总数+1
+        problem.setProblemId(newProblemId);
+
         // 设置创建时间和更新时间
         LocalDateTime now = LocalDateTime.now();
         problem.setCreatedAt(now);
