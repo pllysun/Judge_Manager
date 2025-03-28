@@ -9,8 +9,8 @@ sandbox:
       runCommand:
         - java
         - Main
-      cpuLimit: 10000000000
-      memoryLimit: 268435456
+      cpuLimit: 1000000000  # 1秒（纳秒单位）
+      memoryLimit: 268435456  # 256MB
       procLimit: 50
       needCompile: true
     python:
@@ -19,8 +19,8 @@ sandbox:
       runCommand:
         - python3
         - main.py
-      cpuLimit: 10000000000
-      memoryLimit: 268435456
+      cpuLimit: 1000000000  # 1秒（纳秒单位）
+      memoryLimit: 268435456  # 256MB
       procLimit: 50
       needCompile: false
     cpp:
@@ -35,7 +35,7 @@ sandbox:
         - main
       runCommand:
         - ./main
-      cpuLimit: 10000000000
-      memoryLimit: 268435456
+      cpuLimit: 1000000000  # 1秒（纳秒单位）
+      memoryLimit: 268435456  # 256MB
       procLimit: 50
       needCompile: true

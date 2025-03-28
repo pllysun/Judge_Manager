@@ -231,11 +231,37 @@ public class CodeServiceImpl implements CodeService {
             // 执行代码
             RunResult runResult = sandboxService.runCode(runRequest);
 
-            // 构建测试用例结果，只保留必要字段
+            // 检查运行结果是否有错误
+            if (!runResult.isSuccess()) {
+                // 如果运行失败，直接返回错误结果
+                return TestCaseResult.builder()
+                        .id(testCase.getId())
+                        .status(runResult.getStatus())
+                        .time(0L)
+                        .timeInMs(0.0)
+                        .memory(0L)
+                        .memoryInMB(0.0)
+                        .runTime(0L)
+                        .stdout("Runtime Error: " + runResult.getErrorMessage())
+                        .build();
+            }
+
+            // 计算单位转换
+            // 纳秒转毫秒 (1毫秒 = 1000000纳秒)
+            long time = runResult.getTime();
+            Double timeInMs = time / 1000000.0;
+            // 字节转MB (1MB = 1024*1024字节)
+            long memory = runResult.getMemory();
+            Double memoryInMB = memory / (1024.0 * 1024.0);
+            
+            // 构建测试用例结果，添加单位转换字段
             return TestCaseResult.builder()
                     .id(testCase.getId())
+                    .status(runResult.getStatus())
                     .time(runResult.getTime())
+                    .timeInMs(timeInMs)
                     .memory(runResult.getMemory())
+                    .memoryInMB(memoryInMB)
                     .runTime(runResult.getRunTime())
                     .stdout(runResult.getStdout())
                     .build();
@@ -252,8 +278,11 @@ public class CodeServiceImpl implements CodeService {
         List<TestCaseResult> testCaseResults = testCaseSet.getTestCases().stream()
                 .map(testCase -> TestCaseResult.builder()
                         .id(testCase.getId())
+                        .status("Compile Error")
                         .time(0L)
+                        .timeInMs(0.0)
                         .memory(0L)
+                        .memoryInMB(0.0)
                         .runTime(0L)
                         .stdout("Compile Error: " + errorMessage)
                         .build())
@@ -277,8 +306,11 @@ public class CodeServiceImpl implements CodeService {
     private TestCaseResult createErrorTestCaseResult(TestCase testCase, String errorMessage) {
         return TestCaseResult.builder()
                 .id(testCase.getId())
+                .status("Runtime Error")
                 .time(0L)
+                .timeInMs(0.0)
                 .memory(0L)
+                .memoryInMB(0.0)
                 .runTime(0L)
                 .stdout("Runtime Error: " + errorMessage)
                 .build();

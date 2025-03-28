@@ -53,6 +53,50 @@ public class TestCaseSetResult {
     @Schema(description = "平均实际运行时间（纳秒）", example = "1100200")
     private Long avgRunTime;
     
+    @Schema(description = "总CPU执行时间（毫秒）", example = "5.865")
+    private Double totalTimeInMs;
+    
+    @Schema(description = "平均CPU执行时间（毫秒）", example = "1.173")
+    private Double avgTimeInMs;
+    
+    @Schema(description = "总内存使用（MB）", example = "50.72")
+    private Double totalMemoryInMB;
+    
+    @Schema(description = "平均内存使用（MB）", example = "10.14")
+    private Double avgMemoryInMB;
+    
+    /**
+     * 获取带单位的总CPU执行时间（毫秒）
+     * @return 带单位的总CPU执行时间字符串
+     */
+    public String getTotalTimeInMsWithUnit() {
+        return totalTimeInMs != null ? String.format("%.2f ms", totalTimeInMs) : "0.00 ms";
+    }
+    
+    /**
+     * 获取带单位的平均CPU执行时间（毫秒）
+     * @return 带单位的平均CPU执行时间字符串
+     */
+    public String getAvgTimeInMsWithUnit() {
+        return avgTimeInMs != null ? String.format("%.2f ms", avgTimeInMs) : "0.00 ms";
+    }
+    
+    /**
+     * 获取带单位的总内存使用（MB）
+     * @return 带单位的总内存使用字符串
+     */
+    public String getTotalMemoryInMBWithUnit() {
+        return totalMemoryInMB != null ? String.format("%.2f MB", totalMemoryInMB) : "0.00 MB";
+    }
+    
+    /**
+     * 获取带单位的平均内存使用（MB）
+     * @return 带单位的平均内存使用字符串
+     */
+    public String getAvgMemoryInMBWithUnit() {
+        return avgMemoryInMB != null ? String.format("%.2f MB", avgMemoryInMB) : "0.00 MB";
+    }
+    
     @Schema(description = "编译错误信息")
     private String compileError;
     
@@ -72,6 +116,10 @@ public class TestCaseSetResult {
             avgMemory = 0L;
             totalRunTime = 0L;
             avgRunTime = 0L;
+            totalTimeInMs = 0.0;
+            avgTimeInMs = 0.0;
+            totalMemoryInMB = 0.0;
+            avgMemoryInMB = 0.0;
             allPassed = false;
             return;
         }
@@ -96,5 +144,11 @@ public class TestCaseSetResult {
         avgTime = totalCount > 0 ? totalTime / totalCount : 0;
         avgMemory = totalCount > 0 ? totalMemory / totalCount : 0;
         avgRunTime = totalCount > 0 ? totalRunTime / totalCount : 0;
+        
+        // 转换为毫秒和MB的单位
+        totalTimeInMs = totalTime != null ? totalTime / 1_000_000.0 : 0.0;
+        avgTimeInMs = avgTime != null ? avgTime / 1_000_000.0 : 0.0;
+        totalMemoryInMB = totalMemory != null ? totalMemory / 1_048_576.0 : 0.0;
+        avgMemoryInMB = avgMemory != null ? avgMemory / 1_048_576.0 : 0.0;
     }
 }

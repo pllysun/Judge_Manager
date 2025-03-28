@@ -4,6 +4,7 @@ package com.dong.judge.service.impl;
     import com.dong.judge.model.dto.sandbox.CodeExecuteRequest;
     import com.dong.judge.model.dto.sandbox.CompileRequest;
     import com.dong.judge.model.dto.sandbox.RunRequest;
+    import com.dong.judge.model.enums.StatusEnum;
     import com.dong.judge.model.vo.sandbox.CodeExecuteResult;
     import com.dong.judge.model.vo.sandbox.CompileResult;
     import com.dong.judge.model.vo.sandbox.RunResult;
@@ -57,10 +58,10 @@ package com.dong.judge.service.impl;
 
                     CompileResult compileResult = compileCode(compileRequest);
 
-                    // 检查编译���果
+                    // 检查编译结果
                     if (!compileResult.isSuccess()) {
                         return CodeExecuteResult.builder()
-                                .status("Compile Error")
+                                .status(StatusEnum.COMPILE_ERROR.getValue())
                                 .stdout("")
                                 .stderr(compileResult.getErrorMessage())
                                 .compileError(compileResult.getErrorMessage())
@@ -188,27 +189,73 @@ package com.dong.judge.service.impl;
                 // 3. 处理运行结果
                 if (runResponse == null || !runResponse.isArray() || runResponse.isEmpty()) {
                     return RunResult.builder()
-                            .status("Error")
+                            .status(StatusEnum.ERROR.getValue())
                             .stderr("运行服务返回无效响应")
                             .build();
                 }
 
                 JsonNode firstResult = runResponse.get(0);
+                String status = firstResult.path("status").asText();
+                String stdout = firstResult.path("files").path("stdout").asText();
+                String stderr = firstResult.path("files").path("stderr").asText();
+                int exitStatus = firstResult.path("exitStatus").asInt();
+                long time = firstResult.path("time").asLong();
+                long memory = firstResult.path("memory").asLong();
+                long runTime = firstResult.path("runTime").asLong();
+                
+                // 根据状态码处理不同的错误情况
+                StatusEnum statusEnum = StatusEnum.fromValue(status);
+                String statusMessage = "";
+                
+                switch (statusEnum) {
+                    case ACCEPTED:
+                        // 正常情况，不需要额外处理
+                        break;
+                    case MEMORY_LIMIT_EXCEEDED:
+                        statusMessage = "内存超限: 程序使用内存超过限制 (" + memory + " KB)";
+                        break;
+                    case TIME_LIMIT_EXCEEDED:
+                        statusMessage = "时间超限: 程序运行时间超过限制 (" + time + " ms)";
+                        break;
+                    case OUTPUT_LIMIT_EXCEEDED:
+                        statusMessage = "输出超限: 程序输出超过限制";
+                        break;
+                    case FILE_ERROR:
+                        statusMessage = "文件错误: 程序操作文件时发生错误";
+                        break;
+                    case NONZERO_EXIT_STATUS:
+                        statusMessage = "非0退出值: 程序异常退出，退出码为 " + exitStatus;
+                        break;
+                    case SIGNALLED:
+                        statusMessage = "进程被信号终止: 程序被系统信号终止";
+                        break;
+                    case INTERNAL_ERROR:
+                        statusMessage = "内部错误: 沙盒内部发生错误";
+                        break;
+                    default:
+                        statusMessage = "未知错误: " + status;
+                        break;
+                }
+                
+                // 如果有错误信息，添加到stderr
+                if (!statusMessage.isEmpty()) {
+                    stderr = stderr.isEmpty() ? statusMessage : stderr + "\n" + statusMessage;
+                }
 
                 return RunResult.builder()
-                        .status(firstResult.path("status").asText())
-                        .exitStatus(firstResult.path("exitStatus").asInt())
-                        .time(firstResult.path("time").asLong())
-                        .memory(firstResult.path("memory").asLong())
-                        .runTime(firstResult.path("runTime").asLong())
-                        .stdout(firstResult.path("files").path("stdout").asText())
-                        .stderr(firstResult.path("files").path("stderr").asText())
+                        .status(status)
+                        .exitStatus(exitStatus)
+                        .time(time)
+                        .memory(memory)
+                        .runTime(runTime)
+                        .stdout(stdout)
+                        .stderr(stderr)
                         .build();
 
             } catch (Exception e) {
                 log.error("运行代码时发生错误", e);
                 return RunResult.builder()
-                        .status("Error")
+                        .status(StatusEnum.ERROR.getValue())
                         .stderr("运行代码时发生错误: " + e.getMessage())
                         .build();
             }
@@ -364,7 +411,7 @@ package com.dong.judge.service.impl;
 
         private CodeExecuteResult buildErrorResult(String message) {
             return CodeExecuteResult.builder()
-                    .status("Error")
+                    .status(StatusEnum.ERROR.getValue())
                     .exitStatus(-1)
                     .stdout("")
                     .stderr(message)
