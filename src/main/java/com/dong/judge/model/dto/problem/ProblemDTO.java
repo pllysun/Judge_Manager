@@ -72,6 +72,7 @@ public class ProblemDTO {
         
         return ProblemDTO.builder()
                 .id(problem.getId())
+                .problemId(problem.getProblemId())
                 .title(problem.getTitle())
                 .difficultyLevel(problem.getDifficultyLevel())
                 .tags(problem.getTags())
