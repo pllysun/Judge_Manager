@@ -22,6 +22,9 @@ import java.util.List;
 public class ProblemDTO {
     @Schema(description = "题目ID")
     private String id;
+
+    @Schema(description="题目ID")
+    private String problemId;
     
     @Schema(description = "题目标题")
     private String title;
