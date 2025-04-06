@@ -52,6 +52,12 @@ public class TestCaseResult {
     @Schema(description = "实际运行时间（纳秒）", example = "1100200")
     private Long runTime;
     
+    @Schema(description = "输入数据", example = "1 2 3")
+    private String input;
+    
+    @Schema(description = "预期输出", example = "6")
+    private String expectedOutput;
+    
     @Schema(description = "标准输出", example = "3\n")
     private String stdout;
 }

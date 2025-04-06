@@ -93,10 +93,7 @@ public class SandboxConfig {
         if (language == null) {
             return null;
         }
-        
-        // 打印调试信息，查看传入的语言标识符
-        System.out.println("获取语言配置: '" + language + "'");
-        
+
         // 尝试从映射表中获取标准语言标识符
         String normalizedLang = normalizedLanguageMap.get(language.toLowerCase());
         if (normalizedLang != null) {

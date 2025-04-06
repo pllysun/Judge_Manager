@@ -1,5 +1,6 @@
 package com.dong.judge.controller;
 
+import com.dong.judge.dao.repository.ProblemRepository;
 import com.dong.judge.model.dto.code.TestCase;
 import com.dong.judge.model.dto.code.TestCaseResult;
 import com.dong.judge.model.dto.problem.ProblemDTO;
@@ -42,6 +43,9 @@ public class ProblemController {
     
     @Autowired
     private TestGroupService testGroupService;
+
+    @Autowired
+    private ProblemRepository problemRepository;
 
     /**
      * 创建题目
@@ -363,6 +367,37 @@ public class ProblemController {
             DifficultyLevel.getByLevel(difficulty);
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("无效的难度级别: " + difficulty);
+        }
+    }
+
+    @GetMapping("/statistics/{problemId}")
+    @Operation(summary = "获取题目统计数据", description = "获取题目的提交统计信息，包括通过率、各种错误类型的数量等")
+    public Result<Problem> getProblemStatistics(@PathVariable String problemId) {
+        try {
+            Problem problem = problemRepository.findById(problemId)
+                    .orElseThrow(() -> new IllegalArgumentException("题目不存在"));
+            
+            // 只返回统计相关的字段
+            Problem statistics = Problem.builder()
+                    .id(problem.getId())
+                    .problemId(problem.getProblemId())
+                    .title(problem.getTitle())
+                    .submissionCount(problem.getSubmissionCount())
+                    .acceptedCount(problem.getAcceptedCount())
+                    .wrongAnswerCount(problem.getWrongAnswerCount())
+                    .timeExceededCount(problem.getTimeExceededCount())
+                    .compileErrorCount(problem.getCompileErrorCount())
+                    .memoryExceededCount(problem.getMemoryExceededCount())
+                    .acceptedRate(problem.getAcceptedRate())
+                    .build();
+            
+            return Result.success("获取题目统计数据成功", statistics);
+        } catch (IllegalArgumentException e) {
+            log.error("获取题目统计数据失败", e);
+            return Result.badRequest(e.getMessage());
+        } catch (Exception e) {
+            log.error("获取题目统计数据异常", e);
+            return Result.error("获取题目统计数据失败: " + e.getMessage());
         }
     }
 }

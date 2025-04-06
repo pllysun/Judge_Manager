@@ -10,6 +10,7 @@ public enum ExecutionStatus {
     
     ACCEPTED("Accepted", "执行成功", 200),
     COMPILE_ERROR("Compile Error", "编译错误", 400),
+    WRONG_ANSWER("Wrong Answer", "答案错误", 400),
     MEMORY_LIMIT_EXCEEDED("Memory Limit Exceeded", "内存超限", 400),
     TIME_LIMIT_EXCEEDED("Time Limit Exceeded", "时间超限", 400),
     OUTPUT_LIMIT_EXCEEDED("Output Limit Exceeded", "输出超限", 400),

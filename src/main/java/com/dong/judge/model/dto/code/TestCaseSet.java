@@ -18,7 +18,7 @@ import java.util.List;
 @Schema(description = "测试集合")
 public class TestCaseSet {
     @Schema(description = "测试集ID", example = "1")
-    private Long id;
+    private String id;
     
     @Schema(description = "测试集名称", example = "基础测试集")
     private String name;

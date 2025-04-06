@@ -269,27 +269,6 @@ public class TestGroupServiceImpl implements TestGroupService {
     }
 
     /**
-     * 为编译错误创建测试用例结果列表
-     *
-     * @param testCases    测试用例列表
-     * @param errorMessage 错误信息
-     * @return 测试用例结果列表
-     */
-    private List<TestCaseResult> createCompileErrorResults(List<TestCase> testCases, String errorMessage) {
-        List<TestCaseResult> testCaseResults = testCases.stream()
-                .map(testCase -> TestCaseResult.builder()
-                        .id(testCase.getId())
-                        .time(0L)
-                        .memory(0L)
-                        .runTime(0L)
-                        .stdout("Compile Error: " + errorMessage)
-                        .build())
-                .toList();
-
-        return new ArrayList<>(testCaseResults);
-    }
-
-    /**
      * 创建错误的测试用例结果
      *
      * @param testCase     测试用例
@@ -302,7 +281,7 @@ public class TestGroupServiceImpl implements TestGroupService {
                 .time(0L)
                 .memory(0L)
                 .runTime(0L)
-                .stdout("Error: " + errorMessage)
+                .stdout(errorMessage)
                 .build();
     }
 }

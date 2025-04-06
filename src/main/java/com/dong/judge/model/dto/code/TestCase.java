@@ -20,4 +20,7 @@ public class TestCase {
     
     @Schema(description = "测试用例输入数据", example = "1 2")
     private String input;
+    
+    @Schema(description = "测试用例预期输出", example = "3")
+    private String output;
 }

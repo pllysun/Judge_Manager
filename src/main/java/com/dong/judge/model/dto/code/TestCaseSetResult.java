@@ -1,5 +1,6 @@
 package com.dong.judge.model.dto.code;
 
+import com.dong.judge.model.enums.ExecutionStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,7 +19,10 @@ import java.util.List;
 @Schema(description = "测试集合执行结果")
 public class TestCaseSetResult {
     @Schema(description = "测试集ID", example = "1")
-    private Long id;
+    private String id;
+    
+    @Schema(description = "提交ID", example = "submission-123")
+    private String submissionId;
     
     @Schema(description = "测试集名称", example = "基础测试集")
     private String name;
@@ -104,6 +108,31 @@ public class TestCaseSetResult {
     private boolean allPassed;
     
     /**
+     * 获取简洁的通过情况描述
+     * @return 格式为"x/y"的字符串，表示通过了x个测试用例，共y个测试用例
+     */
+    @Schema(description = "通过情况描述", example = "3/5")
+    public String getPassRatio() {
+        return passedCount + "/" + totalCount;
+    }
+    
+    /**
+     * 获取第一个错误的测试用例详情
+     * @return 第一个错误的测试用例，如果全部通过则返回null
+     */
+    @Schema(description = "第一个错误的测试用例")
+    public TestCaseResult getFirstFailedTestCase() {
+        if (testCaseResults == null || testCaseResults.isEmpty() || allPassed) {
+            return null;
+        }
+        
+        return testCaseResults.stream()
+                .filter(result -> !ExecutionStatus.ACCEPTED.getCode().equals(result.getStatus()))
+                .findFirst()
+                .orElse(null);
+    }
+    
+    /**
      * 计算统计信息
      */
     public void calculateStatistics() {
@@ -125,8 +154,13 @@ public class TestCaseSetResult {
         }
         
         totalCount = testCaseResults.size();
-        // 由于TestCaseResult不再包含passed字段，我们假设所有测试用例都通过
-        passedCount = totalCount;
+        
+        // 计算通过的测试用例数量，只有状态为Accepted的测试用例才算通过
+        passedCount = (int) testCaseResults.stream()
+                .filter(result -> "Accepted".equals(result.getStatus()))
+                .count();
+        
+        // 只有当所有测试用例都通过时，allPassed才为true
         allPassed = passedCount == totalCount;
         
         totalTime = testCaseResults.stream()
