@@ -2,6 +2,8 @@ package com.dong.judge.service;
 
 import com.dong.judge.model.dto.code.TestCaseSetResult;
 import com.dong.judge.model.pojo.judge.Submission;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.util.List;
 
@@ -45,4 +47,15 @@ public interface SubmissionService {
      * @return 提交记录
      */
     Submission getSubmissionById(String submissionId);
-} 
+    
+    /**
+     * 分页获取所有用户的提交记录
+     * @param pageRequest 分页请求参数
+     * @param problemId 题目ID（可选）
+     * @param userId 用户ID（可选）
+     * @param status 提交状态（可选）
+     * @param language 编程语言（可选）
+     * @return 分页提交记录
+     */
+    Page<Submission> getAllSubmissionsPage(PageRequest pageRequest, String problemId, String userId, String status, String language);
+}

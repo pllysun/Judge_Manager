@@ -8,7 +8,14 @@ import com.dong.judge.model.pojo.judge.Submission;
 import com.dong.judge.service.SubmissionService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +25,7 @@ import java.util.List;
 public class SubmissionServiceImpl implements SubmissionService {
     
     private final SubmissionRepository submissionRepository;
+    private final MongoTemplate mongoTemplate;
     
     @Override
     public Submission saveSubmission(String userId, String problemId, String code, String language, TestCaseSetResult result) {
@@ -77,6 +85,40 @@ public class SubmissionServiceImpl implements SubmissionService {
     @Override
     public Submission getSubmissionById(String submissionId) {
         return submissionRepository.findById(submissionId).orElse(null);
+    }
+    
+    @Override
+    public Page<Submission> getAllSubmissionsPage(PageRequest pageRequest, String problemId, String userId, String status, String language) {
+        Query query = new Query();
+        
+        // 添加查询条件
+        if (StringUtils.hasText(problemId)) {
+            query.addCriteria(Criteria.where("problemId").is(problemId));
+        }
+        
+        if (StringUtils.hasText(userId)) {
+            query.addCriteria(Criteria.where("userId").is(userId));
+        }
+        
+        if (StringUtils.hasText(status)) {
+            query.addCriteria(Criteria.where("status").is(status));
+        }
+        
+        if (StringUtils.hasText(language)) {
+            query.addCriteria(Criteria.where("language").is(language));
+        }
+        
+        // 获取总记录数
+        long total = mongoTemplate.count(query, Submission.class);
+        
+        // 添加分页和排序
+        query.with(pageRequest);
+        
+        // 执行查询
+        List<Submission> submissions = mongoTemplate.find(query, Submission.class);
+        
+        // 返回分页结果
+        return new PageImpl<>(submissions, pageRequest, total);
     }
     
     /**
